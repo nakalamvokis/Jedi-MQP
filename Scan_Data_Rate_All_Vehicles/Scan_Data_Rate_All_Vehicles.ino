@@ -63,8 +63,8 @@ void setup()
 
 void loop()
 {
-    unsigned char len = 0;  // length of data
-    unsigned char buf[8];   // 8 byte data buffer
+    //unsigned char len = 0;  // length of data
+    //unsigned char buf[8];   // 8 byte data buffer
 
     int dataRate = 0;
 
@@ -74,7 +74,7 @@ void loop()
         if (CAN_OK == CAN.begin(dataRate)) // Initialize CAN reading the data rate
         {
             int counter = 0;
-            while (counter < 100) // 100 attempts to read from the OBD-II port, each with a 10 ms wait (1 second of polling for data)
+            while (counter < 10) // 100 attempts to read from the OBD-II port, each with a 10 ms wait (1 second of polling for data)
             {
                 if (CAN_MSGAVAIL == CAN.checkReceive()) // check if data was recieved
                 {
@@ -89,6 +89,7 @@ void loop()
         {
             Serial.print("Data rate detected: ");
             Serial.print(getDataRateString(dataRate));
+            Serial.println();
             break;
         }
         else if (dataRate == CAN_1000KBPS) // reached last data rate without detecting traffic

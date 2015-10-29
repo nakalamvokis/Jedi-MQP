@@ -54,6 +54,7 @@ const DataRate DataRateTable[17] =
 /* SHIELD SETUP */
 MCP_CAN CAN(SPI_CS_PIN);  // Set chip select pin
 
+
 void setup()
 {
     Serial.begin(115200);

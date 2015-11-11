@@ -33,7 +33,7 @@ void setup()
   
     if (CAN_OK == CAN.begin(CAN_500KBPS)) // Initialize CAN reading at 500 Kbps
     {
-        Serial.println("CAN BUS Shield init ok!");
+       // Serial.println("CAN BUS Shield init ok!");
     }
   
     else
@@ -63,10 +63,12 @@ void loop()
         {
             Serial.print(timestamp);   // print timestamp
             Serial.print(",");
+            Serial.print("0x");
             Serial.print(canId, HEX);  // print CAN message ID in HEX
             Serial.print(",");
             for(int i = 0; i<len; i++) // print each data byte in HEX
             {
+                Serial.print("0x");
                 Serial.print(buf[i], HEX);
                 Serial.print(",");
             }

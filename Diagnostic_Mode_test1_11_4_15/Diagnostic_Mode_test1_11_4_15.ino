@@ -72,9 +72,11 @@ void loop()
     }
 */
 
+while(true)
+{
     Serial.println("Sent diagnostic mode request");
     CAN.sendMsgBuf(DIAG_MODE_PID, STANDARD_FRAME, DIAG_MODE_PAYLOAD_SIZE, DIAG_MODE_PAYLOAD);
-    delay(100);
+   // delay(100);
 
     if(CAN_MSGAVAIL == CAN.checkReceive())    // check if data is coming in
     {
@@ -100,7 +102,8 @@ void loop()
         }
         Serial.println();
     }
-   
+    delay(50);
+}
   int numBlinks = 0;
   while(numBlinks < 100)
   {

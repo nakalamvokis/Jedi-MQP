@@ -25,13 +25,24 @@
 
 const unsigned char UDS_PID = 0x7E0;                      // Process ID for Universal Diagnostic System (UDS)
 const unsigned char LIGHTS_AND_DOORS_PID = 0x60D;         // Process ID cooresponding to lights and doors
-const unsigned char LIGHTS_ON_MASK = 0x06;                // Mask for lights on, cooresponds to ID 0x60D data byte[0]
 const unsigned int LIGHTS_ON_DATA_BYTE = 0x00;            // Data byte for lights on in the 0x60D ID packets
-const unsigned char HIGH_BEAMS_MASK = 0x08;     // Mask for high beams, cooresponds to ID 0x60D data byte[1]
-const unsigned int HIGH_BEAMS_DATA_BYTE = 0x01; // Data byte for high beams on in the 0x60D ID packets
+const unsigned int HIGH_BEAMS_DATA_BYTE = 0x01;           // Data byte for high beams on in the 0x60D ID packets
 const unsigned int MAX_PAYLOAD_SIZE = 0x08;
 unsigned char previousPacket [MAX_PAYLOAD_SIZE];
 const unsigned int STANDARD_FRAME = 0; // Standard frame parameter
+
+// DOORS STATE
+const unsigned int DOORS_BYTE = 0x00;
+const unsigned int DRIVER_DOOR_BIT = 0x03;
+const unsigned int PASSENGER_DOOR_BIT = 0x04;
+const unsigned int DRIVER_SIDE_BACK_DOOR_BIT = 0x05;
+const unsigned int PASSENGER_SIDE_BACK_DOOR_BIT = 0x06;
+
+// LOCKS STATE
+const unsigned int LOCKS_BYTE = 0x02;
+const unsigned int LOCKS_BIT = 0x04;
+
+
 
 bool firstPacketRead = false; // flag for first packet read
 
@@ -66,13 +77,13 @@ void loop()
   
     if(CAN_MSGAVAIL == CAN.checkReceive())    // check if data is coming in
     {
-        CAN.readMsgBuf(&len, currentPacket);            // read data,  len: data length, buf: data buffer
+        CAN.readMsgBuf(&len, currentPacket);  // read data,  len: data length, buf: data buffer
         unsigned long timestamp = millis();   // get time since program started in milliseconds
         unsigned long canId = CAN.getCanId(); // get the ID of the CAN message
 
         if (!firstPacketRead)
         {
-            firstPacketRead = true;
+            firstPacketRead = true; // first packet has been read
         }
 
         else if (canId == UDS_PID)
@@ -80,38 +91,105 @@ void loop()
             Serial.println("Malicious UDS message detected on the Network!");
             Serial.println("Please bring the vehicle to a stop, turn off the vehicle, and exit the vehicle as soon as possible");
         }
-
+        
         else if (canId == LIGHTS_AND_DOORS_PID)
         {
-            if (((currentPacket[LIGHTS_ON_DATA_BYTE] ^ previousPacket[LIGHTS_ON_DATA_BYTE]) & LIGHTS_ON_MASK) == LIGHTS_ON_MASK) // check for a state change in the lights
+            int currentByte = 0;
+            for (currentByte = 0; currentByte < 3; currentByte++) // loop through all relevant bytes 0, 1, and 2
             {
-                if (currentPacket[LIGHTS_ON_DATA_BYTE] & LIGHTS_ON_MASK) // state was switched ON
+                unsigned char changedBits = currentPacket[currentByte] ^ previousPacket[currentByte]; // determine which bits were changed since last packet
+                int currentBit = 0;
+                for (currentBit = 0; currentBit < 8; currentBit++) // loop through all bits in the current byte
                 {
-                    Serial.println("Lights have been switched on");
-                }
-
-                else // state was switched OFF
-                {
-                    Serial.println("Lights have been switched off");
-                }
-            }
-
-            if (((currentPacket[HIGH_BEAMS_DATA_BYTE] ^ previousPacket[HIGH_BEAMS_DATA_BYTE]) & HIGH_BEAMS_MASK) == HIGH_BEAMS_MASK) // check for a state change in the high beams
-            {
-                if (currentPacket[HIGH_BEAMS_DATA_BYTE] & HIGH_BEAMS_MASK) // state was switched ON
-                {
-                    Serial.println("High beams have been switched on");
-                }
-
-                else // state was switched OFF
-                {
-                    Serial.println("High beams switched off");
+                    if ((changedBits >> currentBit) & 0x01) // check if current bit was changed, shift in order to check all bits
+                    {
+                        bool state = ((currentPacket[currentByte] >> currentBit) & 0x01); // checks what the current state of bit is
+                        if (currentByte == DOORS_BYTE)
+                        {
+                            switch(currentBit)
+                            {
+                                case DRIVER_DOOR_BIT:
+                                {
+                                    if (state)
+                                    {
+                                        Serial.println("Driver side door opened");
+                                    }
+                                    else
+                                    {
+                                        Serial.println("Driver side door closed");
+                                    }
+                                    break;
+                                }
+                                case PASSENGER_DOOR_BIT:
+                                {
+                                    if (state)
+                                    {
+                                        Serial.println("Passenger side door opened");
+                                    }
+                                    else
+                                    {
+                                        Serial.println("Passenger side door closed");
+                                    }
+                                    break;
+                                }
+                                case DRIVER_SIDE_BACK_DOOR_BIT:
+                                {
+                                    if (state)
+                                    {
+                                        Serial.println("Driver side back door opened");
+                                    }
+                                    else
+                                    {
+                                        Serial.println("Driver side back door closed");
+                                    }
+                                    break;
+                                }
+                                case PASSENGER_SIDE_BACK_DOOR_BIT:
+                                {
+                                    if (state)
+                                    {
+                                        Serial.println("Passenger side back door opened");
+                                    }
+                                    else
+                                    {
+                                        Serial.println("Passenger side back door closed");
+                                    }
+                                    break;
+                                }
+                                default:
+                                {
+                                    break;
+                                }                    
+                            }
+                        }
+                        else if (currentByte == LOCKS_BYTE)
+                        {
+                            switch(currentBit)
+                            {
+                                case LOCKS_BIT:
+                                {
+                                    if(state)
+                                    {
+                                        Serial.println("Doors have been locked"); 
+                                    }
+                                    else
+                                    {
+                                        Serial.println("Doors have been unlocked");
+                                    }
+                                    break;
+                                }
+                                default:
+                                {
+                                    break;
+                                }
+                            }
+                        }
+                    } 
                 }
             }
         }
-
+     }
         memcpy(currentPacket, previousPacket, MAX_PAYLOAD_SIZE); // set the previously read packet to the most recently read packet
-    }
 }
 
 /*********************************************************************************************************

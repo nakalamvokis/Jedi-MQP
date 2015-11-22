@@ -20,7 +20,6 @@
 #include <SPI.h>
 
 /* CONSTANTS */
-const unsigned char UDS_PID = 0x7E0;                      // Process ID for Universal Diagnostic System (UDS)
 const unsigned int MAX_PAYLOAD_SIZE = 0x08;               // Maximum data size of a packet's payload
 const unsigned int STANDARD_FRAME = 0;                    // Standard frame parameter
 
@@ -48,6 +47,10 @@ const unsigned int TRUNK_PID = 0x358;                     // Process ID coorespo
 unsigned char previousTrunkPacket [MAX_PAYLOAD_SIZE] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 const unsigned int TRUNK_BYTE = 0x02;                     // Byte cooresponding to the trunk
 const unsigned int TRUNK_BIT = 0x00;                      // Bit cooresponding to the trunk
+
+
+/* UDS DATA */
+const unsigned char UDS_PID = 0x7E0;                      // Process ID for Universal Diagnostic System (UDS)
 
 
 /* SHIELD SETUP */

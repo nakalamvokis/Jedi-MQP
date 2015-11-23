@@ -13,6 +13,8 @@
   *          program to compile successfully.
   *        - This program is written for the SEEED CAN Bus Shield.
   *        - This code has been written to protect a 2014 Nissan Altima.
+  *        - Packet Composition:  {Byte[0], Byte[1], Byte[2], Byte[3], Byte[4], ... , Byte[n]} 
+  *        - Byte Composition:    {Bit[7], Bit[6], Bit[5], Bit[4], Bit[3], Bit[2], Bit[1], Bit[0]}
 */
 
 /* INCLUDES */
@@ -29,13 +31,13 @@ const unsigned int LIGHTS_AND_DOORS_PID = 0x60D;          // Process ID coorespo
 unsigned char previousLightsAndDoorsPacket [MAX_PAYLOAD_SIZE] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 
 const unsigned int DOORS_BYTE = 0x00;                     // Byte cooresponding to doors state
-const unsigned int DRIVER_DOOR_BIT = 0x03;                // Bit cooresponding to driver door
-const unsigned int PASSENGER_DOOR_BIT = 0x04;             // Bit cooresponding to passenger door
-const unsigned int DRIVER_SIDE_BACK_DOOR_BIT = 0x05;      // Bit cooresponding to driver side back door
-const unsigned int PASSENGER_SIDE_BACK_DOOR_BIT = 0x06;   // Bit cooresponding to passenger side back door
+const unsigned int DRIVER_DOOR_BIT = 0x03;                // Bit position cooresponding to driver door
+const unsigned int PASSENGER_DOOR_BIT = 0x04;             // Bit position cooresponding to passenger door
+const unsigned int DRIVER_SIDE_BACK_DOOR_BIT = 0x05;      // Bit position cooresponding to driver side back door
+const unsigned int PASSENGER_SIDE_BACK_DOOR_BIT = 0x06;   // Bit position cooresponding to passenger side back door
 
 const unsigned int LOCKS_BYTE = 0x02;                     // Byte cooresponding to locks state
-const unsigned int LOCKS_BIT = 0x04;                      // Bit cooresponding to locks state (on/off)
+const unsigned int LOCKS_BIT = 0x04;                      // Bit position cooresponding to locks state (on/off)
 
 const unsigned int LIGHTS_ON_DATA_BYTE = 0x00;            // Byte cooresponding to lights state
 const unsigned int HIGH_BEAMS_DATA_BYTE = 0x01;           // Byte cooresponding to high beams state
@@ -46,7 +48,7 @@ const unsigned int TRUNK_PID = 0x358;                     // Process ID coorespo
 /* Global to store previously read lights and doors packet data - initailized to all 0xFF in order to detect whether or not it has been set */
 unsigned char previousTrunkPacket [MAX_PAYLOAD_SIZE] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 const unsigned int TRUNK_BYTE = 0x02;                     // Byte cooresponding to the trunk
-const unsigned int TRUNK_BIT = 0x00;                      // Bit cooresponding to the trunk
+const unsigned int TRUNK_BIT = 0x00;                      // Bit position cooresponding to the trunk
 
 
 /* UDS DATA */
@@ -187,6 +189,7 @@ void CheckLightsAndDoorsPacket (unsigned char packetLength, unsigned char *curre
                       break;
                     }
                 }
+                break;
               }
             case LOCKS_BYTE: // Check the byte that contains the state of the door locks
               {
@@ -209,10 +212,12 @@ void CheckLightsAndDoorsPacket (unsigned char packetLength, unsigned char *curre
                       break;
                     }
                 }
+                break;
               }
             default:
               {
                 // do nothing
+                break;
               }
           }
         }
@@ -244,6 +249,7 @@ void CheckTrunkPacket (unsigned char packetLength, unsigned char *currentPacket,
         Serial.println("Trunk was closed");
       }
     }
+    memcpy(previousPacket, currentPacket, packetLength); // set the previously read packet to the most recently read packet
   }
 }
 

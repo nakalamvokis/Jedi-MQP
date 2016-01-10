@@ -6,6 +6,9 @@
   * Brief:
   *
   * Notes:
+  * When developing this code, it was determined that the compiler is very picky, especially
+  * with pointer arithmetic. For this reason, the circular buffer implements a counter rather
+  * than pointer comparison for checking the buffer wrapping condition.
   * 
 */
 
@@ -22,13 +25,13 @@ typedef struct {
 } can_message_t;
 
 typedef struct {
-  can_message_t *buffer_start; // start of data buffer
-  can_message_t *buffer_end;   // end of data buffer 
-  size_t capacity;    // maximum number of items in buffer
-  size_t itemSize;    // size of each item in buffer
+  can_message_t *bufferStart;  // start of data buffer
   can_message_t *head;         // pointer to head
   can_message_t *tail;         // pointer to tail
-  bool hasWrapped;    // whether or not circular buffer has wrapped around
+  can_message_t *bufferEnd;
+  size_t capacity;             // maximum number of items in buffer
+  size_t itemSize;             // size of each item in buffer
+  bool hasWrapped;             // whether or not circular buffer has bufferEndped around
 } circular_buffer_t;
 
 /* FUNCTION PROTOTYPES */
@@ -39,13 +42,18 @@ void circular_buffer_init(circular_buffer_t *cb, size_t capacity, size_t itemSiz
 void circular_buffer_free(circular_buffer_t *cb);
 void circular_buffer_push(circular_buffer_t *cb, can_message_t *item);
 void cicular_buffer_pop(circular_buffer_t *cb, can_message_t *item);
-void circular_buffer_dump(circular_buffer_t *cb);
-void test_circular_buffer(circular_buffer_t *cb);
+int circular_buffer_dump(circular_buffer_t *cb);
+void test_circular_buffer(circular_buffer_t *cb, uint16_t itemCount);
 
 /* CONSTANTS */
-#define CIRCULAR_BUFFER_CAPACITY 250
+#define CIRCULAR_BUFFER_CAPACITY 1000
 
 /* GLOBALS */
+
+
+/* COMPILER SWITCHES */
+#define DIAG 1
+
 
 /** Reads a CAN message from the FIFO queue
  *  @param *frame Pointer to frame struct to be populated with message data
@@ -103,14 +111,18 @@ void serial_print_can_message(can_message_t* message)
  */
 void circular_buffer_init(circular_buffer_t *cb, size_t capacity, size_t itemSize)
 {
-  Serial.println("DIAG: Init buffer");
-  cb->buffer_start = (can_message_t *) malloc(capacity * itemSize);
-  cb->buffer_end = (cb->buffer_start + (capacity * itemSize));// check this, not sure how to make buffer_end
+  cb->bufferStart = (can_message_t *) malloc(capacity * itemSize);
   cb->capacity = capacity;
   cb->itemSize = itemSize;
-  cb->head = cb->buffer_start;
-  cb->tail = cb->buffer_start;
+  cb->head = cb->bufferStart;
+  cb->tail = cb->bufferStart;
+  cb->bufferEnd = cb->bufferStart;
   cb->hasWrapped = false;
+  cb->bufferEnd += capacity;
+
+  #ifdef DIAG
+    Serial.println("\nDIAG: Init buffer");
+  #endif
 }
 
 /** Frees circular buffer
@@ -118,8 +130,7 @@ void circular_buffer_init(circular_buffer_t *cb, size_t capacity, size_t itemSiz
  */
 void circular_buffer_free(circular_buffer_t *cb)
 {
-  free(cb->buffer_start);
-  free(cb->buffer_end);
+  free(cb->bufferStart);
   /*free(cb->capacity);
   free(cb->itemSize);
   free(cb->head);
@@ -134,9 +145,12 @@ void circular_buffer_push(circular_buffer_t *cb, can_message_t *item)
 {
   memcpy(cb->head, item, cb->itemSize);
   cb->head++;
-  if (cb->head == cb->buffer_end)
+  if (cb->head == cb->bufferEnd)
   {
-    cb->head = cb->buffer_start;
+    #ifdef DIAG
+      Serial.println("\nDIAG: Reached end of buffer");
+    #endif
+    cb->head = cb->bufferStart;
     cb->hasWrapped = true;
   }
 }
@@ -149,16 +163,17 @@ void cicular_buffer_pop(circular_buffer_t *cb, can_message_t *item)
 {
   memcpy(item, cb->tail, cb->itemSize);
   cb->tail++;
-  if (cb->tail == cb->buffer_end)
+  if (cb->tail == cb->bufferEnd)
   {
-    cb->tail = cb->buffer_start;
+    cb->tail = cb->bufferStart;
   }
 }
 
 /** Dumps all circular buffer data to the serial port - for debug
  *  @param *cb Circular buffer struct to be dumped to serial
+ *  @return messageCount Number of messages read from circular buffer
  */
-void circular_buffer_dump(circular_buffer_t *cb)
+int circular_buffer_dump(circular_buffer_t *cb)
 {
   can_message_t *readStart = NULL;
   can_message_t *readEnd = NULL;
@@ -171,7 +186,7 @@ void circular_buffer_dump(circular_buffer_t *cb)
   }
   else
   {
-    readStart = cb->buffer_start;
+    readStart = cb->bufferStart;
   }
   
   readEnd = cb->head;
@@ -182,19 +197,22 @@ void circular_buffer_dump(circular_buffer_t *cb)
   {
     serial_print_can_message(currentMessage);
     currentMessage++;
+    if(currentMessage == cb->bufferEnd)
+    {
+      currentMessage = cb->bufferStart;
+    }
     messageCount++;
   }
-  Serial.print("\nDIAG: Message Count - ");
-  Serial.print(messageCount, DEC);
-  Serial.print(", expected - ");
-  Serial.print(cb->capacity, DEC);
+  
+  return messageCount;
 }
 
-void test_circular_buffer(circular_buffer_t *cb)
+void test_circular_buffer(circular_buffer_t *cb, uint16_t itemCount)
 {
   uint16_t numItems = 0;
+  uint16_t readResult = 0;
   can_message_t newMessage;
-  for (numItems = 0; numItems < cb->capacity; numItems++)
+  for (numItems = 0; numItems < itemCount; numItems++)
   {
     newMessage.timestamp = millis();
     newMessage.id = numItems;
@@ -207,9 +225,16 @@ void test_circular_buffer(circular_buffer_t *cb)
     
     circular_buffer_push(cb, &newMessage);
   }
-
-  Serial.println("DIAG: Dumping Circular Buffer");
-  circular_buffer_dump(cb);
+  #ifdef DIAG
+    Serial.println("\nDIAG: Dumping Circular Buffer");
+  #endif
+  readResult = circular_buffer_dump(cb);
+  #ifdef DIAG
+    Serial.print("\nDIAG: Message Count - ");
+    Serial.print(readResult, DEC);
+    Serial.print(", expected - ");
+    Serial.print(cb->capacity, DEC);
+  #endif
 }
 
 
@@ -232,12 +257,20 @@ void setup(void)
 void loop(void)
 {
   circular_buffer_t cb;
-  Serial.println("DIAG: Init Circular Buffer");
+  #ifdef DIAG
+  Serial.println("\nDIAG: Init Circular Buffer");
+  #endif
   circular_buffer_init(&cb, CIRCULAR_BUFFER_CAPACITY, sizeof(can_message_t));
 
-  Serial.println("DIAG: Adding Data to Circular Buffer");
-  test_circular_buffer(&cb);
-
+  #ifdef DIAG
+    Serial.println("\nDIAG: Adding Data to Circular Buffer");
+    // test_circular_buffer(&cb, 100);
+    Serial.println();
+    // test_circular_buffer(&cb, 250);
+    Serial.println();
+    test_circular_buffer(&cb, 20030);
+    Serial.println();
+  #endif
 /*
   FLEXCAN_frame_t newFrame;
   while (true) 

@@ -25,16 +25,17 @@ typedef struct {
 } can_message_t;
 
 typedef struct {
-  can_message_t *bufferStart;  // start of data buffer
-  can_message_t *head;         // pointer to head
-  can_message_t *tail;         // pointer to tail
-  can_message_t *bufferEnd;
-  size_t capacity;             // maximum number of items in buffer
-  size_t itemSize;             // size of each item in buffer
-  bool hasWrapped;             // whether or not circular buffer has bufferEndped around
+  can_message_t *bufferStart;   // start of data buffer
+  can_message_t *bufferEnd;     // end of data buffer
+  can_message_t *head;          // pointer to head
+  can_message_t *tail;          // pointer to tail
+  size_t capacity;              // maximum number of items in buffer
+  size_t itemSize;              // size of each item in buffer
+  bool hasWrapped;              // whether or not circular buffer has bufferEndped around
 } circular_buffer_t;
 
 /* FUNCTION PROTOTYPES */
+void can_config_init(FLEXCAN_config_t *canConfig);
 bool can_fifo_read(FLEXCAN_frame_t *frame);
 void serial_print_frame(FLEXCAN_frame_t frame);
 void serial_print_can_message(can_message_t* message);
@@ -46,14 +47,29 @@ int circular_buffer_dump(circular_buffer_t *cb);
 void test_circular_buffer(circular_buffer_t *cb, uint16_t itemCount);
 
 /* CONSTANTS */
-#define CIRCULAR_BUFFER_CAPACITY 1000
+#define CIRCULAR_BUFFER_CAPACITY 2000
 
-/* GLOBALS */
+/* GLOBAL VARIABLES */
+circular_buffer_t cb;
+uint32_t count;
+bool attackOccured;
 
 
 /* COMPILER SWITCHES */
-#define DIAG 1
+//#define DIAG 1
 
+
+/** Initializes CAN configuration parameters
+ *  @param canConfig CAN configuration struct to be set
+ */
+void can_config_init(FLEXCAN_config_t *canConfig)
+{
+  canConfig->presdiv   = 1;  // Prescale division factor.
+  canConfig->propseg   = 2;  // Prop Seg length.
+  canConfig->rjw       = 1;  // Sychronization Jump Width
+  canConfig->pseg_1    = 7;  // Phase 1 length
+  canConfig->pseg_2    = 3;  // Phase 2 length
+}
 
 /** Reads a CAN message from the FIFO queue
  *  @param *frame Pointer to frame struct to be populated with message data
@@ -111,7 +127,7 @@ void serial_print_can_message(can_message_t* message)
  */
 void circular_buffer_init(circular_buffer_t *cb, size_t capacity, size_t itemSize)
 {
-  cb->bufferStart = (can_message_t *) malloc(capacity * itemSize);
+  cb->bufferStart = (can_message_t *) calloc(capacity, itemSize);
   cb->capacity = capacity;
   cb->itemSize = itemSize;
   cb->head = cb->bufferStart;
@@ -119,10 +135,6 @@ void circular_buffer_init(circular_buffer_t *cb, size_t capacity, size_t itemSiz
   cb->bufferEnd = cb->bufferStart;
   cb->hasWrapped = false;
   cb->bufferEnd += capacity;
-
-  #ifdef DIAG
-    Serial.println("\nDIAG: Init buffer");
-  #endif
 }
 
 /** Frees circular buffer
@@ -131,10 +143,6 @@ void circular_buffer_init(circular_buffer_t *cb, size_t capacity, size_t itemSiz
 void circular_buffer_free(circular_buffer_t *cb)
 {
   free(cb->bufferStart);
-  /*free(cb->capacity);
-  free(cb->itemSize);
-  free(cb->head);
-  free(cb->tail);*/
 }
 
 /** Initializes circular buffer
@@ -147,9 +155,6 @@ void circular_buffer_push(circular_buffer_t *cb, can_message_t *item)
   cb->head++;
   if (cb->head == cb->bufferEnd)
   {
-    #ifdef DIAG
-      Serial.println("\nDIAG: Reached end of buffer");
-    #endif
     cb->head = cb->bufferStart;
     cb->hasWrapped = true;
   }
@@ -203,7 +208,6 @@ int circular_buffer_dump(circular_buffer_t *cb)
     }
     messageCount++;
   }
-  
   return messageCount;
 }
 
@@ -225,44 +229,35 @@ void test_circular_buffer(circular_buffer_t *cb, uint16_t itemCount)
     
     circular_buffer_push(cb, &newMessage);
   }
-  #ifdef DIAG
-    Serial.println("\nDIAG: Dumping Circular Buffer");
-  #endif
+  Serial.println("\nDIAG: Dumping Circular Buffer");
   readResult = circular_buffer_dump(cb);
-  #ifdef DIAG
-    Serial.print("\nDIAG: Message Count - ");
-    Serial.print(readResult, DEC);
-    Serial.print(", expected - ");
-    Serial.print(cb->capacity, DEC);
-  #endif
+  Serial.print("\nDIAG: Message Count - ");
+  Serial.print(readResult, DEC);
+  Serial.print(", expected - ");
+  Serial.print(cb->capacity, DEC); 
 }
 
 
 void setup(void)
 {
   Serial.begin(115200);
-  FLEXCAN_config_t can_config;
-  
-  can_config.presdiv   = 1;  // Prescale division factor.
-  can_config.propseg   = 2;  // Prop Seg length.
-  can_config.rjw       = 1;  // Sychronization Jump Width
-  can_config.pseg_1    = 7;  // Phase 1 length
-  can_config.pseg_2    = 3;  // Phase 2 length
+  // CAN network configuration
+  FLEXCAN_config_t canConfig;
+  can_config_init(&canConfig);
+  FLEXCAN_init(canConfig);
 
-  FLEXCAN_init(can_config);
+  // Circular buffer configuration
+  circular_buffer_init(&cb, CIRCULAR_BUFFER_CAPACITY, sizeof(can_message_t));
 
-
+  count = 0;
+  attackOccured = false;
 }
+
 
 void loop(void)
 {
-  circular_buffer_t cb;
   #ifdef DIAG
-  Serial.println("\nDIAG: Init Circular Buffer");
-  #endif
-  circular_buffer_init(&cb, CIRCULAR_BUFFER_CAPACITY, sizeof(can_message_t));
-
-  #ifdef DIAG
+    Serial.println("\nDIAG: Init Circular Buffer");
     Serial.println("\nDIAG: Adding Data to Circular Buffer");
     // test_circular_buffer(&cb, 100);
     Serial.println();
@@ -270,18 +265,52 @@ void loop(void)
     Serial.println();
     test_circular_buffer(&cb, 20030);
     Serial.println();
-  #endif
-/*
-  FLEXCAN_frame_t newFrame;
-  while (true) 
-  {
-    if (can_fifo_read(&newFrame))
+    circular_buffer_free(&cb);
+
+  #else
+    //Serial.println(count);
+    if (attackOccured)
     {
-      serial_print_frame(newFrame);
+      Serial.println(count, DEC);
+      Serial.println("Attack Occured");
+      delay(10000);
     }
-  }*/
- // circular_buffer_free(&cb);
-  Serial.println();
-  delay(10000);
+    else //(can_fifo_read(&newFrame)))
+    {
+      FLEXCAN_frame_t newFrame;
+
+      // TEST
+      newFrame.dlc = 8;
+      newFrame.id = count;
+      newFrame.data[0] = 1;
+      newFrame.data[1] = 2;
+      newFrame.data[2] = 3;
+      newFrame.data[3] = 4;
+      newFrame.data[4] = 5;
+      newFrame.data[5] = 6;
+      newFrame.data[6] = 7;
+      newFrame.data[7] = 8;
+      // END TEST
+
+      if (count > 1000)
+      {
+        circular_buffer_dump(&cb);
+        //circular_buffer_free(&cb);
+        //attackOccured = true;
+        //Serial.println("Attack found");
+      }
+      else
+      {
+        Serial.println("No attack");
+        can_message_t newMessage;
+        newMessage.timestamp = millis();
+        memcpy(&(newMessage.len), &(newFrame.dlc), sizeof(newFrame.dlc));
+        memcpy(&(newMessage.id), &(newFrame.id), sizeof(newFrame.id));
+        memcpy(&(newMessage.data), &(newFrame.data), sizeof(newFrame.data));   
+        circular_buffer_push(&cb, &newMessage);
+        count++;
+      }
+    }
+  #endif
 }
 

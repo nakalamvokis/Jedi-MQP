@@ -38,9 +38,7 @@ typedef struct {
 void can_config_init(FLEXCAN_config_t *canConfig);
 bool can_fifo_read(FLEXCAN_frame_t *frame);
 void serial_print_frame(FLEXCAN_frame_t frame);
-int generate_frame(FLEXCAN_frame_t *frame);
-void serial_print_can_message(can_message_t *message);
-void transpose_can_message(can_message_t *message, FLEXCAN_frame_t *frame);
+void serial_print_can_message(can_message_t* message);
 void circular_buffer_init(circular_buffer_t *cb, size_t capacity, size_t itemSize);
 void circular_buffer_free(circular_buffer_t *cb);
 void circular_buffer_push(circular_buffer_t *cb, can_message_t *item);
@@ -49,20 +47,17 @@ int circular_buffer_dump(circular_buffer_t *cb);
 void test_circular_buffer(circular_buffer_t *cb, uint16_t itemCount);
 
 /* CONSTANTS */
-#define CIRCULAR_BUFFER_CAPACITY    2000
-#define UDS_ID                      0x7E8
-#define TEST_PACKET_TRANSFER_DELAY  1
-#define NORMAL_TRAFFIC              0
-#define CORRUPT_TRAFFIC             1
-
+#define CIRCULAR_BUFFER_CAPACITY 2000
+#define UDS_ID  0x7E8
 
 /* GLOBAL VARIABLES */
 circular_buffer_t cb;
 uint32_t count;
-uint8_t readType;
+bool attackOccured;
 
 
 /* COMPILER SWITCHES */
+//#define DIAG 1
 #define PRINT 2
 
 
@@ -97,51 +92,26 @@ bool can_fifo_read(FLEXCAN_frame_t *frame)
  */
 void serial_print_frame(FLEXCAN_frame_t *frame)
 {
-  int frameLength = frame->dlc;
-  int dataIndex = 0;
-  Serial.print(millis(), DEC);
-  Serial.print(" ");
-  Serial.print(frame->id, HEX);
-  Serial.print(" ");
-  for (dataIndex = 0; dataIndex < frameLength; dataIndex++)
-  {
-    Serial.print(frame->data[dataIndex]);
-    Serial.print(" ");
-  }
-  Serial.println();
+    int frameLength = frame->dlc;
+    int dataIndex = 0;
+    Serial.println(millis(), DEC);
+    Serial.println(frame->id, HEX);
+    for (dataIndex = 0; dataIndex < frameLength; dataIndex++)
+    {
+        Serial.println(frame->data[dataIndex]);
+    }
 }
 
-/** Generates a random CAN frame
- *  This function will only be used for testing purposes
- * @param frame Frame to be filled with random data
- * @return If a frame was generated or not
- */
-int generate_frame(FLEXCAN_frame_t *frame)
-{
-  int status = random(0, 1 + 1);
-  if (status)
-  {
-    int dataCounter = 0;
-    frame->dlc = random(0, 8 + 1);
-    for (dataCounter = 0; dataCounter < frame->dlc; dataCounter++)
-    {
-      frame->data[dataCounter] = random(0, 255 + 1);
-    }
-    frame->id = random(0, 4096 + 1);
-    //serial_print_frame(frame);
-  }
-  return status;
-}
 
 /** Prints a message to the serial port
  *  @param message Message struct containing message data
  */
-void serial_print_can_message(can_message_t *message)
+void serial_print_can_message(can_message_t* message)
 {
   uint8_t currentData = 0;
   Serial.print(message->timestamp, DEC);
   Serial.print(" ");
-  Serial.print(message->id, HEX);
+  Serial.print(message->id, DEC);
   Serial.print(" ");
   for (currentData = 0; currentData < message->len; currentData++)
   {
@@ -151,19 +121,6 @@ void serial_print_can_message(can_message_t *message)
   Serial.println();
 }
 
-/** Copies frame data to a CAN message
- *  This will be used to extract neccessary data from a frame in order to shorten the
- *  size of each packet in memory
- *  @param *message CAN message to be filled with data
- *  @param *frame Frame to be copied to CAN message
- */
-void transpose_can_message(can_message_t *message, FLEXCAN_frame_t *frame)
-{
-  message->timestamp = millis();
-  memcpy(&(message->len), &(frame->dlc), sizeof(frame->dlc));
-  memcpy(&(message->id), &(frame->id), sizeof(frame->id));
-  memcpy(&(message->data), &(frame->data), sizeof(frame->data));
-}
 
 /** Initializes circular buffer
  *  @param *cb Circular buffer struct to be initialized
@@ -241,19 +198,15 @@ int circular_buffer_dump(circular_buffer_t *cb)
   
   readEnd = cb->head;
   currentMessage = readStart;
-  int count = 1;
+  
   // iterate through circular buffer while no messages have been read and we haven't reached the end of the data
   while ((messageCount == 0) || (currentMessage != readEnd))
   {
     #ifdef PRINT
-      delay(5);
-      Serial.print("CIRCULAR BUFFER MESSAGE #");
-      Serial.print(count, DEC);
-      Serial.print(" ");
+      delay(500);
       serial_print_can_message(currentMessage);
-      count++;
     #else
-      //WRITE TO SD CARD HERE
+      //WRITE TO SD CARD
     #endif
     currentMessage++;
     if(currentMessage == cb->bufferEnd)
@@ -265,6 +218,33 @@ int circular_buffer_dump(circular_buffer_t *cb)
   return messageCount;
 }
 
+void test_circular_buffer(circular_buffer_t *cb, uint16_t itemCount)
+{
+  uint16_t numItems = 0;
+  uint16_t readResult = 0;
+  can_message_t newMessage;
+  for (numItems = 0; numItems < itemCount; numItems++)
+  {
+    newMessage.timestamp = millis();
+    newMessage.id = numItems;
+    newMessage.len = 8;
+    int currData = 0;
+    for (currData = 0; currData < (&newMessage)->len; currData++)
+    {
+      newMessage.data[currData] = 8;
+    }
+    
+    circular_buffer_push(cb, &newMessage);
+  }
+  Serial.println("\nDIAG: Dumping Circular Buffer");
+  readResult = circular_buffer_dump(cb);
+  Serial.print("\nDIAG: Message Count - ");
+  Serial.print(readResult, DEC);
+  Serial.print(", expected - ");
+  Serial.print(cb->capacity, DEC); 
+}
+
+
 void setup(void)
 {
   Serial.begin(115200);
@@ -275,41 +255,71 @@ void setup(void)
 
   // Circular buffer configuration
   circular_buffer_init(&cb, CIRCULAR_BUFFER_CAPACITY, sizeof(can_message_t));
-  
-  readType = NORMAL_TRAFFIC;
+
+  count = 0;
+  attackOccured = false;
 }
 
 
 void loop(void)
 {
-    FLEXCAN_frame_t newFrame;
-    if (readType == CORRUPT_TRAFFIC)
+  #ifdef DIAG
+    Serial.println("\nDIAG: Init Circular Buffer");
+    Serial.println("\nDIAG: Adding Data to Circular Buffer");
+    // test_circular_buffer(&cb, 100);
+    Serial.println();
+    // test_circular_buffer(&cb, 250);
+    Serial.println();
+    test_circular_buffer(&cb, 20030);
+    Serial.println();
+    circular_buffer_free(&cb);
+
+  #else
+    //Serial.println(count);
+    if (attackOccured)
     {
+      Serial.println(count, DEC);
       Serial.println("Attack Occured");
       delay(10000);
     }
-    else if ((readType == NORMAL_TRAFFIC) && (generate_frame(&newFrame))) //(can_fifo_read(&newFrame)))
+    else //(can_fifo_read(&newFrame)))
     {
-      can_message_t newMessage;
-      transpose_can_message(&newMessage, &newFrame);
-      
-      // TEST CODE
-      delay(TEST_PACKET_TRANSFER_DELAY);
-      // END TEST CODE
+      FLEXCAN_frame_t newFrame;
 
-      if (newMessage.id == UDS_ID)
+      // TEST
+      newFrame.dlc = 8;
+      newFrame.id = count;
+      newFrame.data[0] = 1;
+      newFrame.data[1] = 2;
+      newFrame.data[2] = 3;
+      newFrame.data[3] = 4;
+      newFrame.data[4] = 5;
+      newFrame.data[5] = 6;
+      newFrame.data[6] = 7;
+      newFrame.data[7] = 8;
+      // END TEST
+
+      if (count > 50000)
       {
-        readType = CORRUPT_TRAFFIC;
+        Serial.println("Buffer Dump:");
         circular_buffer_dump(&cb);
         circular_buffer_free(&cb);
-        Serial.print("Attack found: ");
-        serial_print_can_message(&newMessage);
+        attackOccured = true;
+        Serial.println("Attack found");
       }
       else
-      { 
+      {
+        //Serial.println("No attack");
+       //Serial.println(count, DEC);
+        can_message_t newMessage;
+        newMessage.timestamp = millis();
+        memcpy(&(newMessage.len), &(newFrame.dlc), sizeof(newFrame.dlc));
+        memcpy(&(newMessage.id), &(newFrame.id), sizeof(newFrame.id));
+        memcpy(&(newMessage.data), &(newFrame.data), sizeof(newFrame.data));   
         circular_buffer_push(&cb, &newMessage);
         count++;
       }
     }
+  #endif
 }
 

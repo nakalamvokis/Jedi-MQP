@@ -18,6 +18,7 @@
 #include <SPI.h>
 #include <SdFat.h>
 
+
 /* STRUCTS */
 typedef struct {
   uint32_t timestamp; // Timestamp - milliseconds since runtime
@@ -36,8 +37,10 @@ typedef struct {
   bool hasWrapped;              // whether or not circular buffer has bufferEndped around
 } circular_buffer_t;
 
+
 /* FUNCTION PROTOTYPES */
 void create_file_timestamp(char *timestamp, size_t strLen);
+bool configure_file(char *fileName, SdFile *file);
 void can_config_init(FLEXCAN_config_t *canConfig);
 bool can_fifo_read(FLEXCAN_frame_t *frame);
 void serial_print_frame(FLEXCAN_frame_t frame);
@@ -52,6 +55,7 @@ void cicular_buffer_pop(circular_buffer_t *cb, can_message_t *item);
 int circular_buffer_dump(circular_buffer_t *cb);
 void test_circular_buffer(circular_buffer_t *cb, uint16_t itemCount);
 
+
 /* CONSTANTS */
 #define CIRCULAR_BUFFER_CAPACITY    2000      // Maximum capacity of the circular buffer
 #define UDS_ID                      0x7E8     // Arbitration ID of all UDS messages sent to the vehicle
@@ -60,6 +64,7 @@ void test_circular_buffer(circular_buffer_t *cb, uint16_t itemCount);
 #define CORRUPT_TRAFFIC             1         // Corrupt CAN traffic
 #define SD_CHIP_SELECT              4         // 
 #define TIMESTAMP_SIZE              100
+
 
 /* GLOBAL VARIABLES */
 circular_buffer_t cb;   // Normal CAN traffic circular buffer
@@ -84,6 +89,23 @@ void create_file_timestamp(char *timestamp, size_t strLen)
   sprintf(timestamp, "%02d/%02d/%04d  %02d:%02d:%02d", Month, Day, Year, Hour, Minute, Second);
 }
 
+/** Opens a new file and prints a timestamp header
+ *  @param *fileName Name of file on SD card
+ *  @param *file File to be configured
+ * 
+ */
+bool configure_file(char *fileName, SdFile *file)
+{
+  if (!file->open(fileName, O_RDWR | O_CREAT | O_AT_END)) 
+  {
+    Serial.println("SD Card file open failed");
+    return false;
+  }
+  file->println(fileTimestamp);
+  return true;
+}
+
+
 /** Initializes CAN configuration parameters
  *  @param canConfig CAN configuration struct to be set
  */
@@ -95,6 +117,7 @@ void can_config_init(FLEXCAN_config_t *canConfig)
   canConfig->pseg_1    = 7;  // Phase 1 length
   canConfig->pseg_2    = 3;  // Phase 2 length
 }
+
 
 /** Reads a CAN message from the FIFO queue
  *  @param *frame Pointer to frame struct to be populated with message data
@@ -109,6 +132,7 @@ bool can_fifo_read(FLEXCAN_frame_t *frame)
    }
    return false;
 }
+
 
 /** Prints a frame to the serial port
  *  @param frame Frame struct containing message data
@@ -128,6 +152,7 @@ void serial_print_frame(FLEXCAN_frame_t *frame)
   }
   Serial.println();
 }
+
 
 /** Generates a random CAN frame
  *  This function will only be used for testing purposes
@@ -151,6 +176,7 @@ int generate_frame(FLEXCAN_frame_t *frame)
   return status;
 }
 
+
 /** Prints a message to the serial port
  *  @param message Message struct containing message data
  */
@@ -169,6 +195,7 @@ void serial_print_can_message(can_message_t *message)
   Serial.println();
 }
 
+
 /** Prints a CAN message to a file
  *  @param *message CAN message to be printed to the file
  *  @param *file File to be printed to
@@ -177,17 +204,16 @@ void serial_print_can_message(can_message_t *message)
 void file_print_message(can_message_t *message, SdFile *file)
 {
   uint8_t currentData = 0;
-  SdFile toFile = *file;
-  toFile.print(message->timestamp, DEC);
-  toFile.print(" ");
-  toFile.print(message->id, HEX);
-  toFile.print(" ");
+  file->print(message->timestamp, DEC);
+  file->print(" ");
+  file->print(message->id, HEX);
+  file->print(" ");
   for (currentData = 0; currentData < message->len; currentData++)
   {
-    toFile.print(message->data[currentData], HEX);
-    toFile.print(" ");
+    file->print(message->data[currentData], HEX);
+    file->print(" ");
   }
-  toFile.println();
+  file->println();
 }
 
 
@@ -204,6 +230,7 @@ void transpose_can_message(can_message_t *message, FLEXCAN_frame_t *frame)
   memcpy(&(message->id), &(frame->id), sizeof(frame->id));
   memcpy(&(message->data), &(frame->data), sizeof(frame->data));
 }
+
 
 /** Initializes circular buffer
  *  @param *cb Circular buffer struct to be initialized
@@ -222,6 +249,7 @@ void circular_buffer_init(circular_buffer_t *cb, size_t capacity, size_t itemSiz
   cb->bufferEnd += capacity;
 }
 
+
 /** Frees circular buffer
  *  @param *cb Circular buffer struct to be freed
  */
@@ -229,6 +257,7 @@ void circular_buffer_free(circular_buffer_t *cb)
 {
   free(cb->bufferStart);
 }
+
 
 /** Initializes circular buffer
  *  @param *cb Circular buffer struct to be initialized
@@ -245,6 +274,7 @@ void circular_buffer_push(circular_buffer_t *cb, can_message_t *item)
   }
 }
 
+
 /** Initializes circular buffer
  *  @param *cb Circular buffer struct to be initialized
  *  @param *item Data to be populated with pop from circular buffer
@@ -259,8 +289,9 @@ void cicular_buffer_pop(circular_buffer_t *cb, can_message_t *item)
   }
 }
 
-/** Dumps all circular buffer data to the serial port - for debug
- *  @param *cb Circular buffer struct to be dumped to serial
+
+/** Dumps all circular buffer data to a new file on the SD Card
+ *  @param *cb Circular buffer struct to be dumped to SD
  *  @return messageCount Number of messages read from circular buffer
  */
 int circular_buffer_dump(circular_buffer_t *cb)
@@ -271,12 +302,9 @@ int circular_buffer_dump(circular_buffer_t *cb)
   uint16_t messageCount = 0;
   SdFile cbFile;
 
-  if (!cbFile.open("circularbuffer.txt", O_RDWR | O_CREAT | O_AT_END)) 
-  {
-    Serial.println("SD Card file open failed");  
-  }
+  char fileName[30] = "Circular_Buffer_Dump";
 
-  cbFile.println(fileTimestamp);
+  configure_file(fileName, &cbFile);
 
   if (cb->hasWrapped)
   {
@@ -290,8 +318,8 @@ int circular_buffer_dump(circular_buffer_t *cb)
   readEnd = cb->head;
   currentMessage = readStart;
 
-  // iterate through circular buffer while no messages have been read and we haven't reached the end of the data
-  while ((messageCount == 0) || (currentMessage != readEnd))
+  // iterate through circular buffer until we reach the end of the data
+  while ((currentMessage == readStart) || (currentMessage != readEnd)) //while ((messageCount == 0) || (currentMessage != readEnd))
   {
     /*
     delay(5);
@@ -302,34 +330,35 @@ int circular_buffer_dump(circular_buffer_t *cb)
     */
     file_print_message(currentMessage, &cbFile);
     currentMessage++;
+    messageCount++;
     if(currentMessage == cb->bufferEnd)
     {
       currentMessage = cb->bufferStart;
     }
-    messageCount++;
   }
   return messageCount;
 }
 
+
 void setup(void)
 {
   Serial.begin(115200);
-  // CAN network configuration
+  
+  /* CAN Network Configuration */
   FLEXCAN_config_t canConfig;
   can_config_init(&canConfig);
   FLEXCAN_init(canConfig);
 
-  // Circular buffer configuration
+  /* Circular Buffer Configuration */
   circular_buffer_init(&cb, CIRCULAR_BUFFER_CAPACITY, sizeof(can_message_t));
 
-  create_file_timestamp(fileTimestamp, TIMESTAMP_SIZE);
-
+  /* File Writing Configuration */
   if (!sd.begin(SD_CHIP_SELECT, SPI_HALF_SPEED)) 
   {
     Serial.println("Failed to init SD Card");
     delay(100);
   }
-  
+  create_file_timestamp(fileTimestamp, TIMESTAMP_SIZE);
   readType = NORMAL_TRAFFIC;
 }
 
@@ -337,6 +366,7 @@ void setup(void)
 void loop(void)
 {
     FLEXCAN_frame_t newFrame;
+    
     if (readType == CORRUPT_TRAFFIC)
     {
       Serial.println("Attack Occured");
@@ -351,13 +381,13 @@ void loop(void)
       delay(TEST_PACKET_TRANSFER_DELAY);
       // END TEST CODE
 
-      if (newMessage.id == UDS_ID)
+      if (newMessage.id == UDS_ID) // UDS message detected, an attack occured
       {
-        readType = CORRUPT_TRAFFIC;
         circular_buffer_dump(&cb);
         circular_buffer_free(&cb);
         Serial.print("Attack found: ");
         serial_print_can_message(&newMessage);
+        readType = CORRUPT_TRAFFIC;
       }
       else
       { 

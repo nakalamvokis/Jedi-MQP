@@ -13,11 +13,10 @@
 */
 
 /* INCLUDES */
-#include <Time.h>
 #include <can.h>
 #include <SPI.h>
 #include <SdFat.h>
-
+#include <Time.h>
 
 /* STRUCTS */
 typedef struct {
@@ -41,6 +40,7 @@ typedef struct {
 /* FUNCTION PROTOTYPES */
 void create_file_timestamp(char *timestamp, size_t strLen);
 bool configure_file(char *fileName, SdFile *file);
+bool readFile(char *fileName, SdFile *file);
 void can_config_init(FLEXCAN_config_t *canConfig);
 bool can_fifo_read(FLEXCAN_frame_t *frame);
 void serial_print_frame(FLEXCAN_frame_t frame);
@@ -62,14 +62,14 @@ void test_circular_buffer(circular_buffer_t *cb, uint16_t itemCount);
 #define TEST_PACKET_TRANSFER_DELAY  1         // Packet simulation send delay time
 #define NORMAL_TRAFFIC              0         // Normal CAN traffic
 #define CORRUPT_TRAFFIC             1         // Corrupt CAN traffic
-#define SD_CHIP_SELECT              4         // 
-#define TIMESTAMP_SIZE              100
+#define SD_CHIP_SELECT              10         // 
+#define TIMESTAMP_SIZE              40
 
 
 /* GLOBAL VARIABLES */
 circular_buffer_t cb;   // Normal CAN traffic circular buffer
 SdFat sd;               // SD Card object
-char *fileTimestamp;    // Timestamp for each file saved to SD card, this marks the start time of the program
+char fileTimestamp[TIMESTAMP_SIZE];    // Timestamp for each file saved to SD card, this marks the start time of the program
 uint8_t readType;       // Current status of CAN traffic (Normal or Corrupt) that decides how the data should be stored
 
 
@@ -79,29 +79,49 @@ uint8_t readType;       // Current status of CAN traffic (Normal or Corrupt) tha
  */
 void create_file_timestamp(char *timestamp, size_t strLen)
 {
-  timestamp = (char *)malloc(strLen);
-  uint16_t Year = year();
-  uint16_t Month = month();
-  uint16_t Day = day();
-  uint16_t Hour = hour();
-  uint16_t Minute = minute();
-  uint16_t Second = second();
+  time_t t = now();
+  uint16_t Year = year(t);
+  uint16_t Month = month(t);
+  uint16_t Day = day(t);
+  uint16_t Hour = hour(t);
+  uint16_t Minute = minute(t);
+  uint16_t Second = second(t);
   sprintf(timestamp, "%02d/%02d/%04d  %02d:%02d:%02d", Month, Day, Year, Hour, Minute, Second);
 }
 
 /** Opens a new file and prints a timestamp header
  *  @param *fileName Name of file on SD card
  *  @param *file File to be configured
- * 
  */
 bool configure_file(char *fileName, SdFile *file)
 {
   if (!file->open(fileName, O_RDWR | O_CREAT | O_AT_END)) 
   {
-    Serial.println("SD Card file open failed");
+    Serial.println("Failed to open file for write");
     return false;
   }
+  file->println(fileName);
+  file->println();
   file->println(fileTimestamp);
+  file->println();
+  return true;
+}
+
+bool readFile(char *fileName, SdFile *file)
+{
+  if (!file->open(fileName, O_READ)) 
+  {
+    Serial.println("Failed to open file for read");
+    return false;
+  }
+  uint8_t data;
+  while ((data = file->read()) >= 0) 
+  {
+    delay(5);
+    Serial.write(data);
+  }
+  file->close();
+  sd.remove(fileName);
   return true;
 }
 
@@ -170,7 +190,8 @@ int generate_frame(FLEXCAN_frame_t *frame)
     {
       frame->data[dataCounter] = random(0, 255 + 1);
     }
-    frame->id = random(0, 4096 + 1);
+    //frame->id = random(0, 4096 + 1);
+    frame->id = random(2000, 2080 + 1);
     //serial_print_frame(frame);
   }
   return status;
@@ -302,7 +323,7 @@ int circular_buffer_dump(circular_buffer_t *cb)
   uint16_t messageCount = 0;
   SdFile cbFile;
 
-  char fileName[30] = "Circular_Buffer_Dump";
+  char fileName[30] = "Circular_Buffer_Dump3.txt";
 
   configure_file(fileName, &cbFile);
 
@@ -317,7 +338,7 @@ int circular_buffer_dump(circular_buffer_t *cb)
   
   readEnd = cb->head;
   currentMessage = readStart;
-
+    cbFile.println("testing.");
   // iterate through circular buffer until we reach the end of the data
   while ((currentMessage == readStart) || (currentMessage != readEnd)) //while ((messageCount == 0) || (currentMessage != readEnd))
   {
@@ -328,7 +349,7 @@ int circular_buffer_dump(circular_buffer_t *cb)
     Serial.print(" ");
     serial_print_can_message(currentMessage);
     */
-    file_print_message(currentMessage, &cbFile);
+    //file_print_message(currentMessage, &cbFile);
     currentMessage++;
     messageCount++;
     if(currentMessage == cb->bufferEnd)
@@ -336,6 +357,9 @@ int circular_buffer_dump(circular_buffer_t *cb)
       currentMessage = cb->bufferStart;
     }
   }
+  cbFile.close();
+  readFile(fileName, &cbFile);
+  delay(100);
   return messageCount;
 }
 
@@ -353,10 +377,9 @@ void setup(void)
   circular_buffer_init(&cb, CIRCULAR_BUFFER_CAPACITY, sizeof(can_message_t));
 
   /* File Writing Configuration */
-  if (!sd.begin(SD_CHIP_SELECT, SPI_HALF_SPEED)) 
+  if (!sd.begin(SD_CHIP_SELECT, SPI_FULL_SPEED)) 
   {
     Serial.println("Failed to init SD Card");
-    delay(100);
   }
   create_file_timestamp(fileTimestamp, TIMESTAMP_SIZE);
   readType = NORMAL_TRAFFIC;
@@ -366,7 +389,6 @@ void setup(void)
 void loop(void)
 {
     FLEXCAN_frame_t newFrame;
-    
     if (readType == CORRUPT_TRAFFIC)
     {
       Serial.println("Attack Occured");
@@ -387,6 +409,7 @@ void loop(void)
         circular_buffer_free(&cb);
         Serial.print("Attack found: ");
         serial_print_can_message(&newMessage);
+        delay(100);
         readType = CORRUPT_TRAFFIC;
       }
       else
@@ -395,4 +418,5 @@ void loop(void)
       }
     }
 }
+
 

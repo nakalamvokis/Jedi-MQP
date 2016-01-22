@@ -43,6 +43,7 @@ typedef struct {
   can_message_t *next;          // pointer to next free location
   size_t capacity;              // maximum number of items in buffer
   size_t itemSize;              // size of each item in buffer
+  bool isFull;                  // whether or not the linear buffer is full
 } linear_buffer_t;
 
 
@@ -64,6 +65,11 @@ void circular_buffer_free(circular_buffer_t *cb);
 void circular_buffer_push(circular_buffer_t *cb, can_message_t *item);
 void cicular_buffer_pop(circular_buffer_t *cb, can_message_t *item);
 int circular_buffer_dump(circular_buffer_t *cb);
+void linear_buffer_init(linear_buffer_t *lb, size_t capacity, size_t itemSize);
+void linear_buffer_reinit(linear_buffer_t *lb);
+void linear_buffer_free(linear_buffer_t *lb);
+void linear_buffer_push(linear_buffer_t *lb, can_message_t *item);
+int linear_buffer_dump(linear_buffer_t *lb, SdFile *lbFile);
 void changeState(int newReadType, int newNetworkStatus);
 
 /* CONSTANTS */
@@ -347,8 +353,8 @@ void circular_buffer_free(circular_buffer_t *cb)
 }
 
 
-/** Initializes circular buffer
- *  @param *cb Circular buffer struct to be initialized
+/** Pushs a item onto the circular buffer
+ *  @param *cb Circular buffer struct to be pushed to
  *  @param *item Data to be pushed to the circular buffer
  */
 void circular_buffer_push(circular_buffer_t *cb, can_message_t *item)
@@ -363,8 +369,8 @@ void circular_buffer_push(circular_buffer_t *cb, can_message_t *item)
 }
 
 
-/** Initializes circular buffer
- *  @param *cb Circular buffer struct to be initialized
+/** Pops an item from the circular buffer
+ *  @param *cb Circular buffer struct to be popped from
  *  @param *item Data to be populated with pop from circular buffer
  */
 void cicular_buffer_pop(circular_buffer_t *cb, can_message_t *item)
@@ -435,18 +441,8 @@ int circular_buffer_dump(circular_buffer_t *cb)
 }
 
 
-
-
-
-
-
-
-
-
-
-
 /** Initializes linear buffer
- *  @param *lb linear buffer struct to be initialized
+ *  @param *lb Linear buffer struct to be initialized
  *  @param capacity Size of linear buffer
  *  @param itemSize Size of a single item in the linear buffer
  */
@@ -455,140 +451,72 @@ void linear_buffer_init(linear_buffer_t *lb, size_t capacity, size_t itemSize)
   lb->bufferStart = (can_message_t *) calloc(capacity, itemSize);
   lb->capacity = capacity;
   lb->itemSize = itemSize;
-  lb->next = cb->bufferStart;
+  lb->next = lb->bufferStart;
   lb->bufferEnd = lb->bufferStart;
   lb->bufferEnd += capacity;
+  lb->isFull = false;
 }
 
 
-/** Reinitializes circular buffer
- *  @param *cb Circular buffer struct to be reinitialized
+/** Reinitializes linear buffer
+ *  @param *cb Linear buffer struct to be reinitialized
  */
 void linear_buffer_reinit(linear_buffer_t *lb)
 {
-  lb-> = lb->bufferStart;
-  lb->tail = lb->bufferStart;
+  lb->next = lb->bufferStart;
+  lb->isFull = false;
 }
 
 
-/** Frees circular buffer
- *  @param *cb Circular buffer struct to be freed
+/** Frees linear buffer
+ *  @param *lb Linear buffer struct to be freed
  */
-void circular_buffer_free(circular_buffer_t *cb)
+void linear_buffer_free(linear_buffer_t *lb)
 {
-  free(cb->bufferStart);
+  free(lb->bufferStart);
 }
 
 
-/** Initializes circular buffer
- *  @param *cb Circular buffer struct to be initialized
- *  @param *item Data to be pushed to the circular buffer
+/** Pushs a value onto the linear buffer
+ *  @param *lb Linear buffer struct to be pushed to
+ *  @param *item Data to be pushed to the linear buffer
  */
-void circular_buffer_push(circular_buffer_t *cb, can_message_t *item)
+void linear_buffer_push(linear_buffer_t *lb, can_message_t *item)
 {
-  memcpy(cb->head, item, cb->itemSize);
-  cb->head++;
-  if (cb->head == cb->bufferEnd)
+  memcpy(lb->next, item, lb->itemSize);
+  lb->next++;
+  if (lb->next == lb->bufferEnd)
   {
-    cb->head = cb->bufferStart;
-    cb->hasWrapped = true;
+    lb->next = lb->bufferStart;
+    lb->isFull = true;
   }
 }
 
 
-/** Initializes circular buffer
- *  @param *cb Circular buffer struct to be initialized
- *  @param *item Data to be populated with pop from circular buffer
+/** Dumps all linear buffer data to an open file on the SD Card
+ *  @param *lb Linear buffer struct to be dumped to SD
+ *  @param *lbFile File to be written to
+ *  @return messageCount Number of messages read from linear buffer
  */
-void cicular_buffer_pop(circular_buffer_t *cb, can_message_t *item)
+int linear_buffer_dump(linear_buffer_t *lb, SdFile *lbFile)
 {
-  memcpy(item, cb->tail, cb->itemSize);
-  cb->tail++;
-  if (cb->tail == cb->bufferEnd)
-  {
-    cb->tail = cb->bufferStart;
-  }
-}
-
-
-/** Dumps all circular buffer data to a new file on the SD Card
- *  @param *cb Circular buffer struct to be dumped to SD
- *  @return messageCount Number of messages read from circular buffer
- */
-int circular_buffer_dump(circular_buffer_t *cb)
-{
-  can_message_t *readStart = NULL;
-  can_message_t *readEnd = NULL;
-  can_message_t *currentMessage = NULL;
   uint16_t messageCount = 0;
-  SdFile cbFile;
-
-  char fileName[30];
-  sprintf(fileName, "Before_UDS_Attack_%lu.txt", fileNumber);
+  can_message_t *currentMessage = lb->bufferStart;
   
-  configure_file(fileName, &cbFile);
-
-  if (cb->hasWrapped)
+  // iterate through linear buffer until we reach the end of the data
+  while ((messageCount == 0) || (currentMessage != lb->bufferEnd))
   {
-    readStart = cb->head;
-  }
-  else
-  {
-    readStart = cb->bufferStart;
-  }
-  
-  readEnd = cb->head;
-  currentMessage = readStart;
-  
-  // iterate through circular buffer until we reach the end of the data
-  while ((messageCount == 0) || (currentMessage != readEnd))
-  {
-    /*
-    delay(5);
-    Serial.print("CIRCULAR BUFFER MESSAGE #");
-    Serial.print(count, DEC);
-    Serial.print(" ");
-    serial_print_can_message(currentMessage);
-    */
-   /* cbFile.print("MSG: ");
-    cbFile.print(" ");
-    cbFile.print(messageCount, DEC);
-    cbFile.print(" ");*/
-    file_print_message(currentMessage, &cbFile);
+   /*
+    lbFile.print("MSG: ");
+    lbFile.print(" ");
+    lbFile.print(messageCount, DEC);
+    lbFile.print(" ");*/
+    file_print_message(currentMessage, lbFile);
     currentMessage++;
     messageCount++;
-    if(currentMessage == cb->bufferEnd)
-    {
-      currentMessage = cb->bufferStart;
-    }
   }
-  cbFile.close();
-//  readFile(fileName, &cbFile);
   return messageCount;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 /** Sets parameters during a state change

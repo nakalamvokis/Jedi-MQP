@@ -1,9 +1,7 @@
-
 /*
   * File Name: SDCard.h
   * Date: 1/21/2016
-  * Authors: Nicholas Kalamvokis, Santiago Rojas, Brian St. Germain, Mark Bentson
-  *
+  * Author: Nicholas Kalamvokis
   *
   * 
 */

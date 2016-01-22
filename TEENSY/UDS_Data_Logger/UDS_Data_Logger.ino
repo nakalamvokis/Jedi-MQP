@@ -1,10 +1,9 @@
 /*
   * File Name: UDS_DATA_LOGGER.ino
   * Date: 1/21/2016
-  * Authors: Nicholas Kalamvokis, Santiago Rojas, Brian St. Germain, Mark Bentson
+  * Author: Nicholas Kalamvokis
   *
   *
-  * 
 */
 
 /* INCLUDES */

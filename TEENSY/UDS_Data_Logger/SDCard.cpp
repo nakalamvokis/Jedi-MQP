@@ -91,3 +91,13 @@ void file_print_message(can_message_t *message, SdFile *file)
   file->println();
 }
 
+/** Prints text to a file
+ *  @param *text String to be printed to the file
+ *  @param *file File to be printed to
+ * 
+ */
+void file_print_string(char *text, SdFile *file)
+{
+  file->println(text);
+}
+

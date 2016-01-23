@@ -38,6 +38,8 @@ void changeState(int newReadType, int newNetworkStatus);
 circular_buffer_t cb;                 // Circular buffer
 linear_buffer_t lb;                   // Linear buffer
 SdFat sd;                             // SD Card object
+SdFile cbFile;                        // Circular buffer file object
+SdFile lbFile;                        // Linear buffer file object
 char fileTimestamp[TIMESTAMP_SIZE];   // Timestamp for each file saved to SD card, this marks the start time of the program
 uint8_t readType;                     // Type of storage used to store messages
 uint8_t networkStatus;                // Current status of CAN traffic (Normal or Corrupt) that decides how the data should be stored
@@ -79,6 +81,9 @@ void changeState(int newReadType, int newNetworkStatus)
       Serial.println("Changing State: Circular -> Linear");
       numUDSMessages = 0;
       corruptMsgCount = 0;
+      char fileName[30];
+      sprintf(fileName, "After_UDS_Attack_%lu.txt", fileNumber);
+      configure_file(fileName, &lbFile);
       break;
     }
     case CIRCULAR_BUFFER:
@@ -142,12 +147,14 @@ void loop(void)
 
           if (newMessage.id == UDS_ID) // UDS message detected, an attack occured
           {
-            SdFile cbFile;
+            // Write contents of circular buffer to a new file
             char fileName[30];
             sprintf(fileName, "Before_UDS_Attack_%lu.txt", fileNumber);
             configure_file(fileName, &cbFile);
             circular_buffer_dump_to_file(&cb, &cbFile);
             cbFile.close();
+
+            
             Serial.print("  Attack found: ");
             serial_print_can_message(&newMessage);
             changeState(LINEAR_BUFFER, CORRUPT_TRAFFIC);
@@ -171,7 +178,8 @@ void loop(void)
           if (lb.isFull == true)
           {
             Serial.println("Linear Buffer is full - dumping to sd");
-            // LEFT OFF HERE //linear_buffer_dump_to_file(linear_buffer_t *lb, SdFile *lbFile);
+            linear_buffer_dump_to_file(&lb, &lbFile);
+            linear_buffer_reinit(&lb);
           }
           linear_buffer_push(&lb, &newMessage);
           corruptMsgCount++;
@@ -186,7 +194,12 @@ void loop(void)
           }
           else if (corruptMsgCount >= MIN_CORRUPT_TRAFFIC_READINGS)
           {
-            // write number of UDS messages to file here
+            // Write UDS message count for this attack to the "after attack" file
+            char UDSMsgCountString[30];
+            sprintf(UDSMsgCountString, "UDS Messages Recorded: %lu", numUDSMessages);
+            file_print_string(UDSMsgCountString, &lbFile);
+            lbFile.close();
+            
             Serial.println("  Done recording UDS traffic");
             changeState(CIRCULAR_BUFFER, CORRUPT_TRAFFIC);
           }

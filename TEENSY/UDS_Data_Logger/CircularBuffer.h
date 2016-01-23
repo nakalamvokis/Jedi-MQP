@@ -15,6 +15,7 @@
 #include <string.h>
 #include <cstddef>
 #include "CANMessage.h"
+#include "SDCard.h"
 
 /* STRUCTS */
 typedef struct {
@@ -33,6 +34,7 @@ void circular_buffer_reinit(circular_buffer_t *cb);
 void circular_buffer_free(circular_buffer_t *cb);
 void circular_buffer_push(circular_buffer_t *cb, can_message_t *item);
 void cicular_buffer_pop(circular_buffer_t *cb, can_message_t *item);
+int circular_buffer_dump_to_file(circular_buffer_t *cb, SdFile *cbFile);
 
 #endif // CIRCULARBUFFER_H
 

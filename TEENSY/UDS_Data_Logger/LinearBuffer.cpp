@@ -59,3 +59,30 @@ void linear_buffer_push(linear_buffer_t *lb, can_message_t *item)
   }
 }
 
+
+/** Dumps all linear buffer data to an open file on the SD Card
+ *  @param *lb Linear buffer struct to be dumped to SD
+ *  @param *lbFile File to be written to
+ *  @return messageCount Number of messages read from linear buffer
+ */
+int linear_buffer_dump_to_file(linear_buffer_t *lb, SdFile *lbFile)
+{
+  uint16_t messageCount = 0;
+  can_message_t *currentMessage = lb->bufferStart;
+  
+  // iterate through linear buffer until we reach the end of the data
+  while ((messageCount == 0) || (currentMessage != lb->bufferEnd))
+  {
+    /* DIAG START */
+    lbFile->print("MSG: ");
+    lbFile->print(" ");
+    lbFile->print(messageCount, DEC);
+    lbFile->print(" ");
+    /* DIAG END */
+    file_print_message(currentMessage, lbFile);
+    currentMessage++;
+    messageCount++;
+  }
+  return messageCount;
+}
+

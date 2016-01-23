@@ -15,6 +15,7 @@
 #include <string.h>
 #include <cstddef>
 #include "CANMessage.h"
+#include "SDCard.h"
 
 /* STRUCTS */
 typedef struct {
@@ -31,6 +32,7 @@ void linear_buffer_init(linear_buffer_t *lb, size_t capacity, size_t itemSize);
 void linear_buffer_reinit(linear_buffer_t *lb);
 void linear_buffer_free(linear_buffer_t *lb);
 void linear_buffer_push(linear_buffer_t *lb, can_message_t *item);
+int linear_buffer_dump_to_file(linear_buffer_t *lb, SdFile *lbFile);
 
 #endif // LINEARBUFFER_H
 

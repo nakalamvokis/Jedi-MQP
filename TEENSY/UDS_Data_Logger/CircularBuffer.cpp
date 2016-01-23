@@ -76,3 +76,47 @@ void cicular_buffer_pop(circular_buffer_t *cb, can_message_t *item)
   }
 }
 
+/** Dumps all circular buffer data to a file on the SD Card
+ *  @param *cb Circular buffer struct to be dumped to SD
+ *  @param *cbFile File to be written to
+ *  @return messageCount Number of messages read from circular buffer
+ */
+int circular_buffer_dump_to_file(circular_buffer_t *cb, SdFile *cbFile)
+{
+  can_message_t *readStart = NULL;
+  can_message_t *readEnd = NULL;
+  can_message_t *currentMessage = NULL;
+  uint16_t messageCount = 0;
+
+  if (cb->hasWrapped)
+  {
+    readStart = cb->head;
+  }
+  else
+  {
+    readStart = cb->bufferStart;
+  }
+  
+  readEnd = cb->head;
+  currentMessage = readStart;
+  
+  // iterate through circular buffer until we reach the end of the data
+  while ((messageCount == 0) || (currentMessage != readEnd))
+  {
+    /* DIAG START */
+    cbFile->print("MSG: ");
+    cbFile->print(" ");
+    cbFile->print(messageCount, DEC);
+    cbFile->print(" ");
+    /* DIAG END */
+    file_print_message(currentMessage, cbFile);
+    currentMessage++;
+    messageCount++;
+    if(currentMessage == cb->bufferEnd)
+    {
+      currentMessage = cb->bufferStart;
+    }
+  }
+  return messageCount;
+}
+

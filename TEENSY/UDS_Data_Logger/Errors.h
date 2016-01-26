@@ -9,6 +9,9 @@
 #ifndef ERRORS_H
 #define ERRORS_H
 
+/* INCLUDES */
+#include <can.h>
+
 #define ERROR_CONTEXT_SIZE 100
 
 /* ENUMS */
@@ -38,5 +41,7 @@ typedef struct {
 /* FUNCTION PROTOTYPES */
 ErrorType_e GetErrorType(Error_e error);
 char *GetErrorMessage(Error_e error);
+void HandleError(Error_e error);
+void Shutdown();
 
 #endif // ERRORS_H

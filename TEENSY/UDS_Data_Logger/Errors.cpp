@@ -33,3 +33,23 @@ char *GetErrorMessage(Error_e error)
   return ErrorTable[error].errorMessage;
 }
 
+/** Handles a recorded error
+ * @param error Error flagged
+ */
+void HandleError(Error_e error)
+{
+  Serial.println(GetErrorMessage(error));
+  if (GetErrorType(error) == eERRTYPE_NON_RECOVERABLE)
+  {
+    Shutdown();
+  }
+}
+
+/** Executes a shutdown
+ */
+void Shutdown()
+{
+  Serial.println("Shutting Down...");
+  while(true);
+}
+

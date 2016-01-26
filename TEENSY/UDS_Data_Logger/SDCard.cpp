@@ -14,10 +14,11 @@
  */
 bool ConfigureFile(char *fileName, SdFile *file)
 {
+  bool status = true;
   if (!file->open(fileName, O_RDWR | O_CREAT | O_AT_END)) 
   {
-    Serial.println("Failed to open file for write");
-    return false;
+    HandleError(eERR_SD_FAILED_FILE_OPEN_WRITE);
+    status = false;
   }
   file->println(fileName);
   file->println();
@@ -27,7 +28,7 @@ bool ConfigureFile(char *fileName, SdFile *file)
   file->print("\t");
   file->print("DATA");
   file->println();
-  return true;
+  return status;
 }
 
 
@@ -38,19 +39,23 @@ bool ConfigureFile(char *fileName, SdFile *file)
  */
 bool ReadFile(char *fileName, SdFile *file)
 {
+  bool status = true;
   if (!file->open(fileName, O_READ)) 
   {
-    Serial.println("Failed to open file for read");
-    return false;
+    HandleError(eERR_SD_FAILED_FILE_OPEN_READ);
+    status = false;
   }
-  int data; // changed from uint8_t to int -> check into this
-  while ((data = file->read()) >= 0) 
+  else
   {
-    delay(1);
-    Serial.write(data);
+    int data; // changed from uint8_t to int -> check into this
+    while ((data = file->read()) >= 0) 
+    {
+      delay(1);
+      Serial.write(data);
+    }
+    file->close();
   }
-  file->close();
-  return true;
+  return status;
 }
 
 
@@ -60,13 +65,13 @@ bool ReadFile(char *fileName, SdFile *file)
  */
 bool DeleteAllFiles(SdFat *sd)
 {
+  bool status = true;
   if (!sd->vwd()->rmRfStar())
   {
-    Serial.println("Failed to delete all files");
-    return false;
+    HandleError(eERR_SD_FAILED_FILE_DELETE);
+    status = false;
   }
-  Serial.println("Deleted all files");
-  return true;
+  return status;
 }
 
 

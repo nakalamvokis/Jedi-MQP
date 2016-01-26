@@ -12,6 +12,7 @@
 /* INCLUDES */
 #include <SdFat.h>
 #include "CANMessage.h"
+#include "Errors.h"
 
 /* FUNCTION PROTOTYPES */
 bool ConfigureFile(char *fileName, SdFile *file);

@@ -84,11 +84,11 @@ void ChangeState(int newReadType, int newNetworkStatus)
     case LINEAR_BUFFER:
     {
       Serial.println("Changing State: Circular -> Linear");
-      g_Model.numUDSMessages = 1;
-      g_Model.corruptMsgCount = 0;
       char fileName[30];
       sprintf(fileName, "After_UDS_Attack_%lu.txt", g_Model.fileNumber);
       ConfigureFile(fileName, &g_LbFile);
+      g_Model.numUDSMessages = 1;
+      g_Model.corruptMsgCount = 1;
       break;
     }
     case CIRCULAR_BUFFER:
@@ -131,6 +131,7 @@ void setup(void)
   DeleteAllFiles(&g_SD);
   CreateFileTimestamp(fileTimestamp, TIMESTAMP_SIZE);
 //  folderName = "newFolder";
+// MakeDirectory(folderName, &g_SD)
 }
 
 
@@ -177,14 +178,14 @@ void loop(void)
         {
           can_message_t newMessage;
           TransposeCanMessage(&newMessage, &newFrame);
+          g_Model.corruptMsgCount++;
+          g_Model.totalMsgCount++;
           if (g_LB.isFull == true)
           {
             LinearBufferDumpToFile(&g_LB, &g_LbFile);
             LinearBufferReinit(&g_LB);
           }
           LinearBufferPush(&g_LB, &newMessage);
-          g_Model.corruptMsgCount++;
-          g_Model.totalMsgCount++;
           if (newMessage.id == UDS_ID) // UDS message detected, an attack occured
           {
             Serial.print("  Another UDS Message found: ");

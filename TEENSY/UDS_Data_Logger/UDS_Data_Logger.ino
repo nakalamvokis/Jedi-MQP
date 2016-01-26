@@ -15,6 +15,7 @@
 #include "LinearBuffer.h"
 #include "CANMessage.h"
 #include "SDCard.h"
+#include "Errors.h"
 
 /* FUNCTION PROTOTYPES */
 void create_file_timestamp(char *timestamp, size_t strLen);
@@ -31,7 +32,7 @@ void changeState(int newReadType, int newNetworkStatus);
 #define CORRUPT_TRAFFIC               1         // Corrupted CAN traffic
 #define SD_CHIP_SELECT                10        // Chip select pin for SD card
 #define TIMESTAMP_SIZE                40        // Size of timestamp string
-#define MIN_CORRUPT_TRAFFIC_READINGS  90000     // Amount of corrupt CAN messages that will be recorded after each UDS message
+#define MIN_CORRUPT_TRAFFIC_READINGS  9000     // Amount of corrupt CAN messages that will be recorded after each UDS message
 
 
 /* GLOBAL VARIABLES */
@@ -54,7 +55,7 @@ bool errorStatus;                     // System error status
  *  This will be used to create the header timestamp on files saved the the SD Card
  *  @param *timestamp String to be populated with the timestamp
  */
-void create_file_timestamp(char *timestamp, size_t strLen)
+void CreateFileTimestamp(char *timestamp, size_t strLen)
 {
   time_t t = now();
   uint16_t Year = year(t);
@@ -70,7 +71,7 @@ void create_file_timestamp(char *timestamp, size_t strLen)
 /** Sets parameters during a state change
  *  @param newReadType New 
  */
-void changeState(int newReadType, int newNetworkStatus)
+void ChangeState(int newReadType, int newNetworkStatus)
 {
   readType = newReadType;
   networkStatus = newNetworkStatus;
@@ -79,17 +80,17 @@ void changeState(int newReadType, int newNetworkStatus)
     case LINEAR_BUFFER:
     {
       Serial.println("Changing State: Circular -> Linear");
-      numUDSMessages = 0;
+      numUDSMessages = 1;
       corruptMsgCount = 0;
       char fileName[30];
       sprintf(fileName, "After_UDS_Attack_%lu.txt", fileNumber);
-      configure_file(fileName, &lbFile);
+      ConfigureFile(fileName, &lbFile);
       break;
     }
     case CIRCULAR_BUFFER:
     {
       Serial.println("Changing State: Linear -> Circular");
-      circular_buffer_reinit(&cb);
+      CircularBufferReinit(&cb);
       fileNumber++;
       break;
     }
@@ -106,20 +107,20 @@ void setup(void)
 
   /* CAN Network Configuration */
   FLEXCAN_config_t canConfig;
-  can_config_init(&canConfig);
+  CanConfigInit(&canConfig);
   FLEXCAN_init(canConfig);
 
   /* Buffer Configuration */
-  circular_buffer_init(&cb, CIRCULAR_BUFFER_CAPACITY, sizeof(can_message_t));
-  linear_buffer_init(&lb, LINEAR_BUFFER_CAPACITY, sizeof(can_message_t));
+  CircularBufferInit(&cb, CIRCULAR_BUFFER_CAPACITY, sizeof(can_message_t));
+  LinearBufferInit(&lb, LINEAR_BUFFER_CAPACITY, sizeof(can_message_t));
 
   /* File Writing Configuration */
   if (!sd.begin(SD_CHIP_SELECT, SPI_FULL_SPEED)) 
   {
     Serial.println("Failed to init SD Card");
   }
-  deleteAllFiles(&sd);
-  create_file_timestamp(fileTimestamp, TIMESTAMP_SIZE);
+  DeleteAllFiles(&sd);
+  CreateFileTimestamp(fileTimestamp, TIMESTAMP_SIZE);
   readType = CIRCULAR_BUFFER;
   networkStatus = NORMAL_TRAFFIC;
 
@@ -139,10 +140,10 @@ void loop(void)
     { 
       case CIRCULAR_BUFFER:
       {
-        if (generate_frame(&newFrame, 0, 8192)) // (can_fifo_read(&newFrame)) // CURRENTLY SIMULATED
+        if (GenerateFrame(&newFrame, 0, 8192)) // (CanFifoRead(&newFrame)) // CURRENTLY SIMULATED
         {
           can_message_t newMessage;
-          transpose_can_message(&newMessage, &newFrame);
+          TransposeCanMessage(&newMessage, &newFrame);
           totalMsgCount++;
 
           if (newMessage.id == UDS_ID) // UDS message detected, an attack occured
@@ -150,19 +151,19 @@ void loop(void)
             // Write contents of circular buffer to a new file
             char fileName[30];
             sprintf(fileName, "Before_UDS_Attack_%lu.txt", fileNumber);
-            configure_file(fileName, &cbFile);
-            circular_buffer_dump_to_file(&cb, &cbFile);
+            ConfigureFile(fileName, &cbFile);
+            CircularBufferDumpToFile(&cb, &cbFile);
             cbFile.close();
 
             
             Serial.print("  Attack found: ");
-            serial_print_can_message(&newMessage);
-            changeState(LINEAR_BUFFER, CORRUPT_TRAFFIC);
-            linear_buffer_push(&lb, &newMessage);
+            SerialPrintCanMessage(&newMessage);
+            ChangeState(LINEAR_BUFFER, CORRUPT_TRAFFIC);
+            LinearBufferPush(&lb, &newMessage);
           }
           else
           {
-            circular_buffer_push(&cb, &newMessage);
+            CircularBufferPush(&cb, &newMessage);
           }
           delay(TEST_PACKET_TRANSFER_DELAY); // TEST CODE - SIMULATES TIME BETWEEN MSG TRANSFERS
         }
@@ -171,17 +172,16 @@ void loop(void)
 
       case LINEAR_BUFFER:
       {
-        if (generate_frame(&newFrame, 0, 50000)) // (can_fifo_read(&newFrame)) // CURRENTLY SIMULATED
+        if (GenerateFrame(&newFrame, 0, 50000)) // (CanFifoRead(&newFrame)) // CURRENTLY SIMULATED
         {
           can_message_t newMessage;
-          transpose_can_message(&newMessage, &newFrame);
+          TransposeCanMessage(&newMessage, &newFrame);
           if (lb.isFull == true)
           {
-            Serial.println("Linear Buffer is full - dumping to sd");
-            linear_buffer_dump_to_file(&lb, &lbFile);
-            linear_buffer_reinit(&lb);
+            LinearBufferDumpToFile(&lb, &lbFile);
+            LinearBufferReinit(&lb);
           }
-          linear_buffer_push(&lb, &newMessage);
+          LinearBufferPush(&lb, &newMessage);
           corruptMsgCount++;
           totalMsgCount++;
           if (newMessage.id == UDS_ID) // UDS message detected, an attack occured
@@ -197,11 +197,11 @@ void loop(void)
             // Write UDS message count for this attack to the "after attack" file
             char UDSMsgCountString[30];
             sprintf(UDSMsgCountString, "UDS Messages Recorded: %lu", numUDSMessages);
-            file_print_string(UDSMsgCountString, &lbFile);
+            FilePrintString(UDSMsgCountString, &lbFile);
             lbFile.close();
             
             Serial.println("  Done recording UDS traffic");
-            changeState(CIRCULAR_BUFFER, CORRUPT_TRAFFIC);
+            ChangeState(CIRCULAR_BUFFER, CORRUPT_TRAFFIC);
           }
           delay(TEST_PACKET_TRANSFER_DELAY); // TEST CODE - SIMULATES TIME BETWEEN MSG TRANSFERS
         }

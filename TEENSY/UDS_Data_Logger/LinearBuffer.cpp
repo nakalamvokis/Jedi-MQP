@@ -13,7 +13,7 @@
  *  @param capacity Size of linear buffer
  *  @param itemSize Size of a single item in the linear buffer
  */
-void linear_buffer_init(linear_buffer_t *lb, size_t capacity, size_t itemSize)
+void LinearBufferInit(linear_buffer_t *lb, size_t capacity, size_t itemSize)
 {
   lb->bufferStart = (can_message_t *) calloc(capacity, itemSize);
   lb->capacity = capacity;
@@ -28,7 +28,7 @@ void linear_buffer_init(linear_buffer_t *lb, size_t capacity, size_t itemSize)
 /** Reinitializes linear buffer
  *  @param *cb Linear buffer struct to be reinitialized
  */
-void linear_buffer_reinit(linear_buffer_t *lb)
+void LinearBufferReinit(linear_buffer_t *lb)
 {
   lb->next = lb->bufferStart;
   lb->isFull = false;
@@ -38,7 +38,7 @@ void linear_buffer_reinit(linear_buffer_t *lb)
 /** Frees linear buffer
  *  @param *lb Linear buffer struct to be freed
  */
-void linear_buffer_free(linear_buffer_t *lb)
+void LinearBufferFree(linear_buffer_t *lb)
 {
   free(lb->bufferStart);
 }
@@ -48,7 +48,7 @@ void linear_buffer_free(linear_buffer_t *lb)
  *  @param *lb Linear buffer struct to be pushed to
  *  @param *item Data to be pushed to the linear buffer
  */
-void linear_buffer_push(linear_buffer_t *lb, can_message_t *item)
+void LinearBufferPush(linear_buffer_t *lb, can_message_t *item)
 {
   memcpy(lb->next, item, lb->itemSize);
   lb->next++;
@@ -65,7 +65,7 @@ void linear_buffer_push(linear_buffer_t *lb, can_message_t *item)
  *  @param *lbFile File to be written to
  *  @return messageCount Number of messages read from linear buffer
  */
-int linear_buffer_dump_to_file(linear_buffer_t *lb, SdFile *lbFile)
+uint16_t LinearBufferDumpToFile(linear_buffer_t *lb, SdFile *lbFile)
 {
   uint16_t messageCount = 0;
   can_message_t *currentMessage = lb->bufferStart;
@@ -79,7 +79,7 @@ int linear_buffer_dump_to_file(linear_buffer_t *lb, SdFile *lbFile)
     lbFile->print(messageCount, DEC);
     lbFile->print(" ");
     /* DIAG END */
-    file_print_message(currentMessage, lbFile);
+    FilePrintMessage(currentMessage, lbFile);
     currentMessage++;
     messageCount++;
   }

@@ -12,7 +12,7 @@
 /** Initializes CAN configuration parameters
  *  @param canConfig CAN configuration struct to be set
  */
-void can_config_init(FLEXCAN_config_t *canConfig)
+void CanConfigInit(FLEXCAN_config_t *canConfig)
 {
   canConfig->presdiv   = 1;  // Prescale division factor.
   canConfig->propseg   = 2;  // Prop Seg length.
@@ -26,7 +26,7 @@ void can_config_init(FLEXCAN_config_t *canConfig)
  *  @param *frame Pointer to frame struct to be populated with message data
  *  @return Whether or not a message was read from the FIFO queue
  */
-bool can_fifo_read(FLEXCAN_frame_t *frame)
+bool CanFifoRead(FLEXCAN_frame_t *frame)
 {
    if(FLEXCAN_fifo_avalible())
    {
@@ -40,7 +40,7 @@ bool can_fifo_read(FLEXCAN_frame_t *frame)
 /** Prints a message to the serial port
  *  @param message Message struct containing message data
  */
-void serial_print_can_message(can_message_t *message)
+void SerialPrintCanMessage(can_message_t *message)
 {
   uint8_t currentData = 0;
   Serial.print(message->timestamp, DEC);
@@ -59,7 +59,7 @@ void serial_print_can_message(can_message_t *message)
 /** Prints a frame to the serial port
  *  @param frame Frame struct containing message data
  */
-void serial_print_frame(FLEXCAN_frame_t *frame)
+void SerialPrintFrame(FLEXCAN_frame_t *frame)
 {
   int frameLength = frame->dlc;
   int dataIndex = 0;
@@ -83,7 +83,7 @@ void serial_print_frame(FLEXCAN_frame_t *frame)
  * @param maxID Maximum ID of generated frame
  * @return If a frame was generated or not
  */
-int generate_frame(FLEXCAN_frame_t *frame, uint16_t minID, uint16_t maxID)
+int GenerateFrame(FLEXCAN_frame_t *frame, uint16_t minID, uint16_t maxID)
 {
   uint8_t status = random(0, 1 + 1);
   if (status)
@@ -105,7 +105,7 @@ int generate_frame(FLEXCAN_frame_t *frame, uint16_t minID, uint16_t maxID)
  *  @param *message CAN message to be filled with data
  *  @param *frame Frame to be copied to CAN message
  */
-void transpose_can_message(can_message_t *message, FLEXCAN_frame_t *frame)
+void TransposeCanMessage(can_message_t *message, FLEXCAN_frame_t *frame)
 {
   message->timestamp = millis();
   memcpy(&(message->len), &(frame->dlc), sizeof(frame->dlc));

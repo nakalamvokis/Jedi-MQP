@@ -1,0 +1,42 @@
+/*
+  * File Name: Errors.h
+  * Date: 1/25/2016
+  * Author: Nicholas Kalamvokis
+  *
+  *
+*/
+
+#ifndef ERRORS_H
+#define ERRORS_H
+
+#define ERROR_CONTEXT_SIZE 100
+
+/* ENUMS */
+enum Error_e
+{
+  eERR_NONE = 0,
+  eERR_SD_FAILED_INIT,
+  eERR_SD_FAILED_FILE_OPEN_READ,
+  eERR_SD_FAILED_FILE_OPEN_WRITE,
+  eERR_SD_FAILED_FILE_DELETE
+};
+
+enum ErrorType_e
+{
+  eERRTYPE_NONE = 0,
+  eERRTYPE_AUTO_RESUME,
+  eERRTYPE_NON_RECOVERABLE
+};
+
+/* STRUCTS */
+typedef struct {
+  Error_e error;
+  ErrorType_e errorType;
+  char errorMessage[ERROR_CONTEXT_SIZE];
+} error_t;
+
+/* FUNCTION PROTOTYPES */
+ErrorType_e GetErrorType(Error_e error);
+char *GetErrorMessage(Error_e error);
+
+#endif // ERRORS_H

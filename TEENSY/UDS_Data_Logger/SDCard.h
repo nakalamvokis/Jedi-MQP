@@ -14,11 +14,11 @@
 #include "CANMessage.h"
 
 /* FUNCTION PROTOTYPES */
-bool configure_file(char *fileName, SdFile *file);
-bool readFile(char *fileName, SdFile *file);
-bool deleteAllFiles(SdFat *sd);
-void file_print_message(can_message_t *message, SdFile *file);
-void file_print_string(char *text, SdFile *file);
+bool ConfigureFile(char *fileName, SdFile *file);
+bool ReadFile(char *fileName, SdFile *file);
+bool DeleteAllFiles(SdFat *sd);
+void FilePrintMessage(can_message_t *message, SdFile *file);
+void FilePrintString(char *text, SdFile *file);
 
 #endif // SDCARD_H
 

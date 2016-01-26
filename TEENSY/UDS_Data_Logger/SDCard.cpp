@@ -12,7 +12,7 @@
  *  @param *fileName Name of file on SD card
  *  @param *file File to be configured
  */
-bool configure_file(char *fileName, SdFile *file)
+bool ConfigureFile(char *fileName, SdFile *file)
 {
   if (!file->open(fileName, O_RDWR | O_CREAT | O_AT_END)) 
   {
@@ -36,7 +36,7 @@ bool configure_file(char *fileName, SdFile *file)
  *  @param *file File to be read
  *  @return Whether or not the file could be opened
  */
-bool readFile(char *fileName, SdFile *file)
+bool ReadFile(char *fileName, SdFile *file)
 {
   if (!file->open(fileName, O_READ)) 
   {
@@ -58,7 +58,7 @@ bool readFile(char *fileName, SdFile *file)
  *  @param sd SD card object
  *  @return Whether or not the rm was successful
  */
-bool deleteAllFiles(SdFat *sd)
+bool DeleteAllFiles(SdFat *sd)
 {
   if (!sd->vwd()->rmRfStar())
   {
@@ -75,7 +75,7 @@ bool deleteAllFiles(SdFat *sd)
  *  @param *file File to be printed to
  * 
  */
-void file_print_message(can_message_t *message, SdFile *file)
+void FilePrintMessage(can_message_t *message, SdFile *file)
 {
   uint8_t currentData = 0;
   file->print(message->timestamp, DEC);
@@ -94,9 +94,8 @@ void file_print_message(can_message_t *message, SdFile *file)
 /** Prints text to a file
  *  @param *text String to be printed to the file
  *  @param *file File to be printed to
- * 
  */
-void file_print_string(char *text, SdFile *file)
+void FilePrintString(char *text, SdFile *file)
 {
   file->println(text);
 }

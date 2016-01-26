@@ -22,12 +22,12 @@ typedef struct {
 } can_message_t;
 
 /* FUNCTION PROTOTYPES */
-void can_config_init(FLEXCAN_config_t *canConfig);
-bool can_fifo_read(FLEXCAN_frame_t *frame);
-void serial_print_can_message(can_message_t *message);
-void serial_print_frame(FLEXCAN_frame_t frame);
-int generate_frame(FLEXCAN_frame_t *frame, uint16_t minID, uint16_t maxID);
-void transpose_can_message(can_message_t *message, FLEXCAN_frame_t *frame);
+void CanConfigInit(FLEXCAN_config_t *canConfig);
+bool CanFifoRead(FLEXCAN_frame_t *frame);
+void SerialPrintCanMessage(can_message_t *message);
+void SerialPrintFrame(FLEXCAN_frame_t frame);
+int GenerateFrame(FLEXCAN_frame_t *frame, uint16_t minID, uint16_t maxID);
+void TransposeCanMessage(can_message_t *message, FLEXCAN_frame_t *frame);
 
 #endif // CANMESSAGE_H
 

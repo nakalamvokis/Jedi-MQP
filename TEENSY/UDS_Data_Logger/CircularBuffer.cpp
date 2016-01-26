@@ -13,7 +13,7 @@
  *  @param capacity Size of circular buffer
  *  @param itemSize Size of a single item in the circular buffer
  */
-void circular_buffer_init(circular_buffer_t *cb, size_t capacity, size_t itemSize)
+void CircularBufferInit(circular_buffer_t *cb, size_t capacity, size_t itemSize)
 {
   cb->bufferStart = (can_message_t *) calloc(capacity, itemSize);
   cb->capacity = capacity;
@@ -29,7 +29,7 @@ void circular_buffer_init(circular_buffer_t *cb, size_t capacity, size_t itemSiz
 /** Reinitializes circular buffer
  *  @param *cb Circular buffer struct to be reinitialized
  */
-void circular_buffer_reinit(circular_buffer_t *cb)
+void CircularBufferReinit(circular_buffer_t *cb)
 {
   cb->head = cb->bufferStart;
   cb->tail = cb->bufferStart;
@@ -40,7 +40,7 @@ void circular_buffer_reinit(circular_buffer_t *cb)
 /** Frees circular buffer
  *  @param *cb Circular buffer struct to be freed
  */
-void circular_buffer_free(circular_buffer_t *cb)
+void CircularBufferFree(circular_buffer_t *cb)
 {
   free(cb->bufferStart);
 }
@@ -50,7 +50,7 @@ void circular_buffer_free(circular_buffer_t *cb)
  *  @param *cb Circular buffer struct to be pushed to
  *  @param *item Data to be pushed to the circular buffer
  */
-void circular_buffer_push(circular_buffer_t *cb, can_message_t *item)
+void CircularBufferPush(circular_buffer_t *cb, can_message_t *item)
 {
   memcpy(cb->head, item, cb->itemSize);
   cb->head++;
@@ -66,7 +66,7 @@ void circular_buffer_push(circular_buffer_t *cb, can_message_t *item)
  *  @param *cb Circular buffer struct to be popped from
  *  @param *item Data to be populated with pop from circular buffer
  */
-void cicular_buffer_pop(circular_buffer_t *cb, can_message_t *item)
+void CicularBufferPop(circular_buffer_t *cb, can_message_t *item)
 {
   memcpy(item, cb->tail, cb->itemSize);
   cb->tail++;
@@ -81,7 +81,7 @@ void cicular_buffer_pop(circular_buffer_t *cb, can_message_t *item)
  *  @param *cbFile File to be written to
  *  @return messageCount Number of messages read from circular buffer
  */
-int circular_buffer_dump_to_file(circular_buffer_t *cb, SdFile *cbFile)
+uint16_t CircularBufferDumpToFile(circular_buffer_t *cb, SdFile *cbFile)
 {
   can_message_t *readStart = NULL;
   can_message_t *readEnd = NULL;
@@ -109,7 +109,7 @@ int circular_buffer_dump_to_file(circular_buffer_t *cb, SdFile *cbFile)
     cbFile->print(messageCount, DEC);
     cbFile->print(" ");
     /* DIAG END */
-    file_print_message(currentMessage, cbFile);
+    FilePrintMessage(currentMessage, cbFile);
     currentMessage++;
     messageCount++;
     if(currentMessage == cb->bufferEnd)

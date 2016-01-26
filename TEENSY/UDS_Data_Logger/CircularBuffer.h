@@ -29,12 +29,12 @@ typedef struct {
 } circular_buffer_t;
 
 /* FUNCTION PROTOTYPES */
-void circular_buffer_init(circular_buffer_t *cb, size_t capacity, size_t itemSize);
-void circular_buffer_reinit(circular_buffer_t *cb);
-void circular_buffer_free(circular_buffer_t *cb);
-void circular_buffer_push(circular_buffer_t *cb, can_message_t *item);
-void cicular_buffer_pop(circular_buffer_t *cb, can_message_t *item);
-int circular_buffer_dump_to_file(circular_buffer_t *cb, SdFile *cbFile);
+void CircularBufferInit(circular_buffer_t *cb, size_t capacity, size_t itemSize);
+void CircularBufferReinit(circular_buffer_t *cb);
+void CircularBufferFree(circular_buffer_t *cb);
+void CircularBufferPush(circular_buffer_t *cb, can_message_t *item);
+void CicularBufferPop(circular_buffer_t *cb, can_message_t *item);
+uint16_t CircularBufferDumpToFile(circular_buffer_t *cb, SdFile *cbFile);
 
 #endif // CIRCULARBUFFER_H
 

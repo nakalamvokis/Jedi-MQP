@@ -28,11 +28,11 @@ typedef struct {
 } linear_buffer_t;
 
 /* FUNCTION PROTOTYPES */
-void linear_buffer_init(linear_buffer_t *lb, size_t capacity, size_t itemSize);
-void linear_buffer_reinit(linear_buffer_t *lb);
-void linear_buffer_free(linear_buffer_t *lb);
-void linear_buffer_push(linear_buffer_t *lb, can_message_t *item);
-int linear_buffer_dump_to_file(linear_buffer_t *lb, SdFile *lbFile);
+void LinearBufferInit(linear_buffer_t *lb, size_t capacity, size_t itemSize);
+void LinearBufferReinit(linear_buffer_t *lb);
+void LinearBufferFree(linear_buffer_t *lb);
+void LinearBufferPush(linear_buffer_t *lb, can_message_t *item);
+uint16_t LinearBufferDumpToFile(linear_buffer_t *lb, SdFile *lbFile);
 
 #endif // LINEARBUFFER_H
 

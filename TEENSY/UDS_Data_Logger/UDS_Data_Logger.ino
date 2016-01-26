@@ -53,6 +53,7 @@ SdFile g_CbFile;                        // Circular buffer file object
 SdFile g_LbFile;                        // Linear buffer file object
 model_t g_Model;                        // System model
 char fileTimestamp[TIMESTAMP_SIZE];     // Timestamp for each file saved to SD card, this marks the start time of the program
+char folderName[20];
 
 /** Creates a detailed timestamp
  *  This will be used to create the header timestamp on files saved the the SD Card
@@ -126,12 +127,10 @@ void setup(void)
   LinearBufferInit(&g_LB, LINEAR_BUFFER_CAPACITY, sizeof(can_message_t));
 
   /* File Writing Configuration */
-  if (!g_SD.begin(SD_CHIP_SELECT, SPI_FULL_SPEED)) 
-  {
-    HandleError(eERR_SD_FAILED_INIT);
-  }
+  SdInit(&g_SD, SD_CHIP_SELECT);
   DeleteAllFiles(&g_SD);
   CreateFileTimestamp(fileTimestamp, TIMESTAMP_SIZE);
+//  folderName = "newFolder";
 }
 
 

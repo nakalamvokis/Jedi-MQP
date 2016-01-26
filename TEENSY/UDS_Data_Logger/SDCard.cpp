@@ -8,6 +8,37 @@
 
 #include "SDCard.h"
 
+/** Initializes SD Card
+ * @param sd SD card object
+ * @param chipSelect Chip select pin for SD card reader
+ */
+bool SdInit(SdFat *sd, uint8_t chipSelect)
+{
+  bool status = true;
+  if (!sd->begin(chipSelect, SPI_FULL_SPEED)) 
+  {
+    HandleError(eERR_SD_FAILED_INIT);
+    status = false;
+  }
+  return status;
+}
+
+/** Makes a new directory on the SD Card
+ * @param *dirName Name of new directory
+ * @param *sd SD card object
+ */
+bool MakeDirectory(char *dirName, SdFat *sd)
+{
+  bool status = true;
+  if (!sd->mkdir(dirName)) 
+  {
+    HandleError(eERR_SD_FAILED_TO_CREATE_DIRECTORY);
+    status = false;
+  } 
+  return status;
+}
+
+
 /** Opens a new file and prints a timestamp header
  *  @param *fileName Name of file on SD card
  *  @param *file File to be configured
@@ -17,7 +48,7 @@ bool ConfigureFile(char *fileName, SdFile *file)
   bool status = true;
   if (!file->open(fileName, O_RDWR | O_CREAT | O_AT_END)) 
   {
-    HandleError(eERR_SD_FAILED_FILE_OPEN_WRITE);
+    HandleError(eERR_SD_FAILED_FILE_OPEN_FOR_WRITE);
     status = false;
   }
   file->println(fileName);
@@ -42,7 +73,7 @@ bool ReadFile(char *fileName, SdFile *file)
   bool status = true;
   if (!file->open(fileName, O_READ)) 
   {
-    HandleError(eERR_SD_FAILED_FILE_OPEN_READ);
+    HandleError(eERR_SD_FAILED_FILE_OPEN_FOR_READ);
     status = false;
   }
   else

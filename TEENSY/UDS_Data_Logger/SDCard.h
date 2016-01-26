@@ -15,6 +15,8 @@
 #include "Errors.h"
 
 /* FUNCTION PROTOTYPES */
+bool SdInit(SdFat *sd, uint8_t chipSelect);
+bool MakeDirectory(char *dirName, SdFat *sd);
 bool ConfigureFile(char *fileName, SdFile *file);
 bool ReadFile(char *fileName, SdFile *file);
 bool DeleteAllFiles(SdFat *sd);

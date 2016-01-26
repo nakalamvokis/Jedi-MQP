@@ -11,11 +11,12 @@
 error_t ErrorTable[]
 {
   {eERR_NONE,                           eERRTYPE_NONE,              ""},
-  {eERR_SD_FAILED_INIT,                 eERRTYPE_NON_RECOVERABLE,   "SD card failed initialization"},
-  {eERR_SD_FAILED_FILE_OPEN_FOR_READ,   eERRTYPE_AUTO_RESUME,       "SD card failed to open a file for read"},
-  {eERR_SD_FAILED_FILE_OPEN_FOR_WRITE,  eERRTYPE_NON_RECOVERABLE,   "SD card failed to open a file for write"},
-  {eERR_SD_FAILED_FILE_DELETE,          eERRTYPE_NON_RECOVERABLE,   "SD card failed to delete a file"},
-  {eERR_SD_FAILED_TO_CREATE_DIRECTORY,  eERRTYPE_NON_RECOVERABLE,   "SD card failed to create a directory"}
+  {eERR_SD_FAILED_INIT,                 eERRTYPE_NON_RECOVERABLE,   "SD card failed initialization."},
+  {eERR_SD_FAILED_FILE_OPEN_FOR_READ,   eERRTYPE_AUTO_RESUME,       "SD card failed to open a file for read."},
+  {eERR_SD_FAILED_FILE_OPEN_FOR_WRITE,  eERRTYPE_NON_RECOVERABLE,   "SD card failed to open a file for write."},
+  {eERR_SD_FAILED_FILE_DELETE,          eERRTYPE_NON_RECOVERABLE,   "SD card failed to delete a file."},
+  {eERR_SD_FAILED_TO_CREATE_DIRECTORY,  eERRTYPE_NON_RECOVERABLE,   "SD card failed to create a directory."},
+  {eERR_SD_LOST_COMMUNICATIONS,         eERRTYPE_NON_RECOVERABLE,   "Lost communications with SD card."}
 };
 
 /** Gets the error type for an error
@@ -40,9 +41,23 @@ char *GetErrorMessage(Error_e error)
 void HandleError(Error_e error)
 {
   Serial.println(GetErrorMessage(error));
-  if (GetErrorType(error) == eERRTYPE_NON_RECOVERABLE)
+  switch (GetErrorType(error))
   {
-    Shutdown();
+    case eERRTYPE_NON_RECOVERABLE:
+    {
+      Shutdown();
+      break;
+    }
+    case eERRTYPE_AUTO_RESUME:
+    {
+      // do nothing
+      break;
+    }
+    default:
+    {
+      // do nothing
+      break;
+    }
   }
 }
 
@@ -51,6 +66,9 @@ void HandleError(Error_e error)
 void Shutdown()
 {
   Serial.println("Shutting Down...");
-  while(true);
+  while(true)
+  {
+    delay(1000);
+  }
 }
 

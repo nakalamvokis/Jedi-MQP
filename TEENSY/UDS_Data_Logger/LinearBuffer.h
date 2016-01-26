@@ -16,6 +16,7 @@
 #include <cstddef>
 #include "CANMessage.h"
 #include "SDCard.h"
+#include "Errors.h"
 
 /* STRUCTS */
 typedef struct {

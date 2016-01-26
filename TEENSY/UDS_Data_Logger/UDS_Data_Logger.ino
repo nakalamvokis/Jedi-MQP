@@ -1,5 +1,5 @@
 /*
-  * File Name: UDS_DATA_LOGGER.ino
+  * File Name: UDS_Data_Logger.ino
   * Date: 1/21/2016
   * Author: Nicholas Kalamvokis
   *
@@ -28,12 +28,12 @@ typedef struct {
 } model_t;
 
 /* FUNCTION PROTOTYPES */
-void CreateFileTimestamp(char *timestamp, size_t strLen);
+void SetTimestamp(char *timestamp, size_t strLen);
 void ChangeState(int newReadType, int newNetworkStatus);
 
 /* CONSTANTS */
 #define CIRCULAR_BUFFER_CAPACITY      1800      // Maximum capacity of the circular buffer, equates to ~1.2 seconds of CAN data
-#define LINEAR_BUFFER_CAPACITY        1000      // Maximum capacity of the linear buffer
+#define LINEAR_BUFFER_CAPACITY        512       // Maximum capacity of the linear buffer
 #define UDS_ID                        0x7E8     // Arbitration ID of all UDS messages sent to the vehicle
 #define TEST_PACKET_TRANSFER_DELAY    1         // Packet simulation send delay time
 #define CIRCULAR_BUFFER               0         // Store messages into circular buffer
@@ -42,7 +42,7 @@ void ChangeState(int newReadType, int newNetworkStatus);
 #define CORRUPT_TRAFFIC               1         // Corrupted CAN traffic
 #define SD_CHIP_SELECT                10        // Chip select pin for SD card
 #define TIMESTAMP_SIZE                40        // Size of timestamp string
-#define MIN_CORRUPT_TRAFFIC_READINGS  15000     // Amount of corrupt CAN messages that will be recorded after each UDS message
+#define MIN_CORRUPT_TRAFFIC_READINGS  5000     // Amount of corrupt CAN messages that will be recorded after each UDS message
 
 
 /* GLOBAL VARIABLES */
@@ -52,14 +52,13 @@ SdFat g_SD;                             // SD Card object
 SdFile g_CbFile;                        // Circular buffer file object
 SdFile g_LbFile;                        // Linear buffer file object
 model_t g_Model;                        // System model
-char fileTimestamp[TIMESTAMP_SIZE];     // Timestamp for each file saved to SD card, this marks the start time of the program
-char folderName[20];
+char g_Timestamp[TIMESTAMP_SIZE];     // Timestamp for each file saved to SD card, this marks the start time of the program
 
-/** Creates a detailed timestamp
+/** Creates a detailed timestamp in the format YYYY-MM-DD_HH-MM-SS
  *  This will be used to create the header timestamp on files saved the the SD Card
  *  @param *timestamp String to be populated with the timestamp
  */
-void CreateFileTimestamp(char *timestamp, size_t strLen)
+void SetTimestamp(char *timestamp, size_t strLen)
 {
   time_t t = now();
   uint16_t Year = year(t);
@@ -68,7 +67,7 @@ void CreateFileTimestamp(char *timestamp, size_t strLen)
   uint16_t Hour = hour(t);
   uint16_t Minute = minute(t);
   uint16_t Second = second(t);
-  sprintf(timestamp, "%02d/%02d/%04d  %02d:%02d:%02d", Month, Day, Year, Hour, Minute, Second);
+  sprintf(timestamp, "%04d-%02d-%02d_%02d-%02d-%02d", Year, Month, Day, Hour, Minute, Second);
 }
 
 
@@ -84,8 +83,8 @@ void ChangeState(int newReadType, int newNetworkStatus)
     case LINEAR_BUFFER:
     {
       Serial.println("Changing State: Circular -> Linear");
-      char fileName[30];
-      sprintf(fileName, "After_UDS_Attack_%lu.txt", g_Model.fileNumber);
+      char fileName[50];
+      sprintf(fileName, "%s/After_UDS_Attack_%lu.txt", g_Timestamp, g_Model.fileNumber);
       ConfigureFile(fileName, &g_LbFile);
       g_Model.numUDSMessages = 1;
       g_Model.corruptMsgCount = 1;
@@ -94,7 +93,6 @@ void ChangeState(int newReadType, int newNetworkStatus)
     case CIRCULAR_BUFFER:
     {
       Serial.println("Changing State: Linear -> Circular");
-      CircularBufferReinit(&g_CB);
       g_Model.fileNumber++;
       break;
     }
@@ -108,7 +106,7 @@ void ChangeState(int newReadType, int newNetworkStatus)
 void setup(void)
 {
   Serial.begin(115200);
-
+  
   /* Model Configuration */
   g_Model.readType = CIRCULAR_BUFFER;
   g_Model.networkStatus = NORMAL_TRAFFIC;
@@ -129,9 +127,8 @@ void setup(void)
   /* File Writing Configuration */
   SdInit(&g_SD, SD_CHIP_SELECT);
   DeleteAllFiles(&g_SD);
-  CreateFileTimestamp(fileTimestamp, TIMESTAMP_SIZE);
-//  folderName = "newFolder";
-// MakeDirectory(folderName, &g_SD)
+  SetTimestamp(g_Timestamp, TIMESTAMP_SIZE);
+  MakeDirectory(g_Timestamp, &g_SD);
 }
 
 
@@ -152,8 +149,8 @@ void loop(void)
           if (newMessage.id == UDS_ID) // UDS message detected, an attack occured
           {
             // Write contents of circular buffer to a new file
-            char fileName[30];
-            sprintf(fileName, "Before_UDS_Attack_%lu.txt", g_Model.fileNumber);
+            char fileName[50];
+            sprintf(fileName, "%s/Before_UDS_Attack_%lu.txt", g_Timestamp, g_Model.fileNumber);
             ConfigureFile(fileName, &g_CbFile);
             CircularBufferDumpToFile(&g_CB, &g_CbFile);
             g_CbFile.close();
@@ -174,18 +171,17 @@ void loop(void)
 
       case LINEAR_BUFFER:
       {
-        if (GenerateFrame(&newFrame, 0, 10000)) // (CanFifoRead(&newFrame)) // CURRENTLY SIMULATED
+        if (GenerateFrame(&newFrame, 0, 3500)) // (CanFifoRead(&newFrame)) // CURRENTLY SIMULATED
         {
           can_message_t newMessage;
           TransposeCanMessage(&newMessage, &newFrame);
-          g_Model.corruptMsgCount++;
-          g_Model.totalMsgCount++;
-          if (g_LB.isFull == true)
+          if (g_LB.isFull)
           {
             LinearBufferDumpToFile(&g_LB, &g_LbFile);
-            LinearBufferReinit(&g_LB);
           }
           LinearBufferPush(&g_LB, &newMessage);
+          g_Model.corruptMsgCount++;
+          g_Model.totalMsgCount++;
           if (newMessage.id == UDS_ID) // UDS message detected, an attack occured
           {
             Serial.print("  Another UDS Message found: ");
@@ -196,13 +192,13 @@ void loop(void)
           }
           else if (g_Model.corruptMsgCount >= MIN_CORRUPT_TRAFFIC_READINGS)
           {
+            LinearBufferDumpToFile(&g_LB, &g_LbFile);
             // Write UDS message count for this attack to the "after attack" file
-            char UDSMsgCountString[30];
-            sprintf(UDSMsgCountString, "UDS Messages Recorded: %lu", g_Model.numUDSMessages);
+            char UDSMsgCountString[50];
+            sprintf(UDSMsgCountString, "UDS Messages Recorded: %lu, Since Last UDS: %lu", g_Model.numUDSMessages, g_Model.corruptMsgCount);
             FilePrintString(UDSMsgCountString, &g_LbFile);
             g_LbFile.close();
             
-            Serial.println("  Done recording UDS traffic");
             ChangeState(CIRCULAR_BUFFER, CORRUPT_TRAFFIC);
           }
           delay(TEST_PACKET_TRANSFER_DELAY); // TEST CODE - SIMULATES TIME BETWEEN MSG TRANSFERS

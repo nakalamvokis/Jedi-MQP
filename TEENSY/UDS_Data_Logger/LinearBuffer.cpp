@@ -60,7 +60,7 @@ void LinearBufferPush(linear_buffer_t *lb, can_message_t *item)
 }
 
 
-/** Dumps all linear buffer data to an open file on the SD Card
+/** Dumps all linear buffer data to an open file on the SD Card and reinitializes the linear buffer
  *  @param *lb Linear buffer struct to be dumped to SD
  *  @param *lbFile File to be written to
  *  @return messageCount Number of messages read from linear buffer
@@ -69,9 +69,27 @@ uint16_t LinearBufferDumpToFile(linear_buffer_t *lb, SdFile *lbFile)
 {
   uint16_t messageCount = 0;
   can_message_t *currentMessage = lb->bufferStart;
+  can_message_t *readEnd;
+
+  if (!lbFile->isOpen())
+  {
+    delay(1000);
+    Serial.println("Caught it");
+    delay(1000);
+  // HandleError(eERR_SD_LOST_COMMUNICATIONS);
+  }
+
+  if (lb->isFull)
+  {
+    readEnd = lb->bufferEnd;
+  }
+  else
+  {
+    readEnd = lb->next;
+  }
   
   // iterate through linear buffer until we reach the end of the data
-  while ((messageCount == 0) || (currentMessage != lb->bufferEnd))
+  while ((messageCount == 0) || (currentMessage != readEnd))
   {
     /* DIAG START */
     lbFile->print("MSG: ");
@@ -83,6 +101,7 @@ uint16_t LinearBufferDumpToFile(linear_buffer_t *lb, SdFile *lbFile)
     currentMessage++;
     messageCount++;
   }
+  LinearBufferReinit(lb);
   return messageCount;
 }
 

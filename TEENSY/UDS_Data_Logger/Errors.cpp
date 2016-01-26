@@ -1,6 +1,6 @@
 /*
-  * File Name: CircularBuffer.cpp
-  * Date: 1/21/2016
+  * File Name: Errors.cpp
+  * Date: 1/25/2016
   * Author: Nicholas Kalamvokis
   *
   *

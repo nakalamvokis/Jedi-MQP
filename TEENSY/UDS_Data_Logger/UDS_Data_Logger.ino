@@ -28,8 +28,8 @@ typedef struct {
 } model_t;
 
 /* FUNCTION PROTOTYPES */
-void create_file_timestamp(char *timestamp, size_t strLen);
-void changeState(int newReadType, int newNetworkStatus);
+void CreateFileTimestamp(char *timestamp, size_t strLen);
+void ChangeState(int newReadType, int newNetworkStatus);
 
 /* CONSTANTS */
 #define CIRCULAR_BUFFER_CAPACITY      1800      // Maximum capacity of the circular buffer, equates to ~1.2 seconds of CAN data
@@ -42,7 +42,7 @@ void changeState(int newReadType, int newNetworkStatus);
 #define CORRUPT_TRAFFIC               1         // Corrupted CAN traffic
 #define SD_CHIP_SELECT                10        // Chip select pin for SD card
 #define TIMESTAMP_SIZE                40        // Size of timestamp string
-#define MIN_CORRUPT_TRAFFIC_READINGS  90000     // Amount of corrupt CAN messages that will be recorded after each UDS message
+#define MIN_CORRUPT_TRAFFIC_READINGS  15000     // Amount of corrupt CAN messages that will be recorded after each UDS message
 
 
 /* GLOBAL VARIABLES */
@@ -52,7 +52,7 @@ SdFat g_SD;                             // SD Card object
 SdFile g_CbFile;                        // Circular buffer file object
 SdFile g_LbFile;                        // Linear buffer file object
 model_t g_Model;                        // System model
-char fileTimestamp[TIMESTAMP_SIZE];   // Timestamp for each file saved to SD card, this marks the start time of the program
+char fileTimestamp[TIMESTAMP_SIZE];     // Timestamp for each file saved to SD card, this marks the start time of the program
 
 /** Creates a detailed timestamp
  *  This will be used to create the header timestamp on files saved the the SD Card
@@ -174,7 +174,7 @@ void loop(void)
 
       case LINEAR_BUFFER:
       {
-        if (GenerateFrame(&newFrame, 0, 50000)) // (CanFifoRead(&newFrame)) // CURRENTLY SIMULATED
+        if (GenerateFrame(&newFrame, 0, 10000)) // (CanFifoRead(&newFrame)) // CURRENTLY SIMULATED
         {
           can_message_t newMessage;
           TransposeCanMessage(&newMessage, &newFrame);

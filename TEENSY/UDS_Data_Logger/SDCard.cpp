@@ -136,3 +136,19 @@ void FilePrintString(char *text, SdFile *file)
   file->println(text);
 }
 
+/** Checks the status of the SD card
+ * @param SD card object
+ * @return Status of SD card communications 
+ */
+bool CheckStatus(SdFat *sd)
+{
+  bool status = true;
+  uint32_t ocr;
+  if (!sd->card()->readOCR(&ocr)) 
+  {
+    HandleError(eERR_SD_LOST_COMMUNICATIONS);
+    status = false;
+  }
+  return status;
+}
+

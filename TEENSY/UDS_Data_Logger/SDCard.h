@@ -22,6 +22,7 @@ bool ReadFile(char *fileName, SdFile *file);
 bool DeleteAllFiles(SdFat *sd);
 void FilePrintMessage(can_message_t *message, SdFile *file);
 void FilePrintString(char *text, SdFile *file);
+bool CheckStatus(SdFat *sd);
 
 #endif // SDCARD_H
 

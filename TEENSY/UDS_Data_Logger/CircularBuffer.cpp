@@ -82,7 +82,7 @@ void CicularBufferPop(circular_buffer_t *cb, can_message_t *item)
  *  @return messageCount Number of messages read from circular buffer
  */
 uint16_t CircularBufferDumpToFile(circular_buffer_t *cb, SdFile *cbFile)
-{
+{ 
   can_message_t *readStart = NULL;
   can_message_t *readEnd = NULL;
   can_message_t *currentMessage = NULL;

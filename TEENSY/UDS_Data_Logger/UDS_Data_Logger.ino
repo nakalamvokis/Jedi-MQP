@@ -42,17 +42,17 @@ void ChangeState(int newReadType, int newNetworkStatus);
 #define CORRUPT_TRAFFIC               1         // Corrupted CAN traffic
 #define SD_CHIP_SELECT                10        // Chip select pin for SD card
 #define TIMESTAMP_SIZE                40        // Size of timestamp string
-#define MIN_CORRUPT_TRAFFIC_READINGS  5000     // Amount of corrupt CAN messages that will be recorded after each UDS message
+#define MIN_CORRUPT_TRAFFIC_READINGS  90000     // Amount of corrupt CAN messages that will be recorded after each UDS message
 
 
 /* GLOBAL VARIABLES */
-circular_buffer_t g_CB;                 // Circular buffer
-linear_buffer_t g_LB;                   // Linear buffer
-SdFat g_SD;                             // SD Card object
-SdFile g_CbFile;                        // Circular buffer file object
-SdFile g_LbFile;                        // Linear buffer file object
-model_t g_Model;                        // System model
-char g_Timestamp[TIMESTAMP_SIZE];     // Timestamp for each file saved to SD card, this marks the start time of the program
+circular_buffer_t g_CB;             // Circular buffer
+linear_buffer_t g_LB;               // Linear buffer
+SdFat g_SD;                         // SD Card object
+SdFile g_CbFile;                    // Circular buffer file object
+SdFile g_LbFile;                    // Linear buffer file object
+model_t g_Model;                    // System model
+char g_Timestamp[TIMESTAMP_SIZE];   // Timestamp for each file saved to SD card, this marks the start time of the program
 
 /** Creates a detailed timestamp in the format YYYY-MM-DD_HH-MM-SS
  *  This will be used to create the header timestamp on files saved the the SD Card
@@ -134,8 +134,8 @@ void setup(void)
 
 void loop(void)
 {
+    CheckStatus(&g_SD);
     FLEXCAN_frame_t newFrame;
-
     switch (g_Model.readType)
     { 
       case CIRCULAR_BUFFER:
@@ -171,7 +171,7 @@ void loop(void)
 
       case LINEAR_BUFFER:
       {
-        if (GenerateFrame(&newFrame, 0, 3500)) // (CanFifoRead(&newFrame)) // CURRENTLY SIMULATED
+        if (GenerateFrame(&newFrame, 0, 65535)) // (CanFifoRead(&newFrame)) // CURRENTLY SIMULATED
         {
           can_message_t newMessage;
           TransposeCanMessage(&newMessage, &newFrame);
@@ -195,7 +195,7 @@ void loop(void)
             LinearBufferDumpToFile(&g_LB, &g_LbFile);
             // Write UDS message count for this attack to the "after attack" file
             char UDSMsgCountString[50];
-            sprintf(UDSMsgCountString, "UDS Messages Recorded: %lu, Since Last UDS: %lu", g_Model.numUDSMessages, g_Model.corruptMsgCount);
+            sprintf(UDSMsgCountString, "UDS Messages Recorded: %lu", g_Model.numUDSMessages);
             FilePrintString(UDSMsgCountString, &g_LbFile);
             g_LbFile.close();
             

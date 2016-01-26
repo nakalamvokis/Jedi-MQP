@@ -70,15 +70,7 @@ uint16_t LinearBufferDumpToFile(linear_buffer_t *lb, SdFile *lbFile)
   uint16_t messageCount = 0;
   can_message_t *currentMessage = lb->bufferStart;
   can_message_t *readEnd;
-
-  if (!lbFile->isOpen())
-  {
-    delay(1000);
-    Serial.println("Caught it");
-    delay(1000);
-  // HandleError(eERR_SD_LOST_COMMUNICATIONS);
-  }
-
+  
   if (lb->isFull)
   {
     readEnd = lb->bufferEnd;

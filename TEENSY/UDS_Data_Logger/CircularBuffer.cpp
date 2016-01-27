@@ -25,7 +25,6 @@ void CircularBufferInit(circular_buffer_t *cb, size_t capacity, size_t itemSize)
   cb->bufferEnd += capacity;
 }
 
-
 /** Reinitializes circular buffer
  *  @param *cb Circular buffer struct to be reinitialized
  */
@@ -36,7 +35,6 @@ void CircularBufferReinit(circular_buffer_t *cb)
   cb->hasWrapped = false;
 }
 
-
 /** Frees circular buffer
  *  @param *cb Circular buffer struct to be freed
  */
@@ -44,7 +42,6 @@ void CircularBufferFree(circular_buffer_t *cb)
 {
   free(cb->bufferStart);
 }
-
 
 /** Pushs a item onto the circular buffer
  *  @param *cb Circular buffer struct to be pushed to
@@ -60,7 +57,6 @@ void CircularBufferPush(circular_buffer_t *cb, can_message_t *item)
     cb->hasWrapped = true;
   }
 }
-
 
 /** Pops an item from the circular buffer
  *  @param *cb Circular buffer struct to be popped from

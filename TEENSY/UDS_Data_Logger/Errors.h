@@ -47,3 +47,4 @@ void HandleError(Error_e error);
 void Shutdown();
 
 #endif // ERRORS_H
+

@@ -11,25 +11,7 @@
 #include <can.h>
 #include <SdFat.h>
 #include <Time.h>
-#include "CircularBuffer.h"
-#include "LinearBuffer.h"
-#include "CANMessage.h"
-#include "SDCard.h"
-#include "Errors.h"
-
-/* STRUCTS */
-typedef struct {
-  uint8_t readType;                     // Type of storage used to store messages
-  uint8_t networkStatus;                // Current status of CAN traffic (Normal or Corrupt) that decides how the data should be stored
-  uint32_t corruptMsgCount;             // Number of messages since UDS message was monitored
-  uint32_t fileNumber;                  // Number cooresponding to each UDS attack instance
-  uint32_t numUDSMessages;              // Number of UDS messages in a single attack
-  uint32_t totalMsgCount;               // Total number of messages recorded
-} model_t;
-
-/* FUNCTION PROTOTYPES */
-void SetTimestamp(char *timestamp, size_t strLen);
-void ChangeState(int newReadType, int newNetworkStatus);
+#include "UDSDataLogger.h"
 
 /* CONSTANTS */
 #define CIRCULAR_BUFFER_CAPACITY      1800      // Maximum capacity of the circular buffer, equates to ~1.2 seconds of CAN data
@@ -43,7 +25,6 @@ void ChangeState(int newReadType, int newNetworkStatus);
 #define SD_CHIP_SELECT                10        // Chip select pin for SD card
 #define TIMESTAMP_SIZE                40        // Size of timestamp string
 #define MIN_CORRUPT_TRAFFIC_READINGS  90000     // Amount of corrupt CAN messages that will be recorded after each UDS message
-
 
 /* GLOBAL VARIABLES */
 circular_buffer_t g_CB;             // Circular buffer
@@ -69,7 +50,6 @@ void SetTimestamp(char *timestamp, size_t strLen)
   uint16_t Second = second(t);
   sprintf(timestamp, "%04d-%02d-%02d_%02d-%02d-%02d", Year, Month, Day, Hour, Minute, Second);
 }
-
 
 /** Sets parameters during a state change
  *  @param newReadType New 
@@ -130,7 +110,6 @@ void setup(void)
   SetTimestamp(g_Timestamp, TIMESTAMP_SIZE);
   MakeDirectory(g_Timestamp, &g_SD);
 }
-
 
 void loop(void)
 {

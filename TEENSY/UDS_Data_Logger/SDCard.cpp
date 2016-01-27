@@ -9,8 +9,8 @@
 #include "SDCard.h"
 
 /** Initializes SD Card
- * @param sd SD card object
- * @param chipSelect Chip select pin for SD card reader
+ *  @param sd SD card object
+ *  @param chipSelect Chip select pin for SD card reader
  */
 bool SdInit(SdFat *sd, uint8_t chipSelect)
 {
@@ -24,8 +24,8 @@ bool SdInit(SdFat *sd, uint8_t chipSelect)
 }
 
 /** Makes a new directory on the SD Card
- * @param *dirName Name of new directory
- * @param *sd SD card object
+ *  @param *dirName Name of new directory
+ *  @param *sd SD card object
  */
 bool MakeDirectory(char *dirName, SdFat *sd)
 {
@@ -37,7 +37,6 @@ bool MakeDirectory(char *dirName, SdFat *sd)
   } 
   return status;
 }
-
 
 /** Opens a new file and prints a timestamp header
  *  @param *fileName Name of file on SD card
@@ -61,7 +60,6 @@ bool ConfigureFile(char *fileName, SdFile *file)
   file->println();
   return status;
 }
-
 
 /** Reads all contents of a file
  *  @param *fileName Name of file on SD card
@@ -89,7 +87,6 @@ bool ReadFile(char *fileName, SdFile *file)
   return status;
 }
 
-
 /** Deletes all files on the SD card
  *  @param sd SD card object
  *  @return Whether or not the rm was successful
@@ -104,7 +101,6 @@ bool DeleteAllFiles(SdFat *sd)
   }
   return status;
 }
-
 
 /** Prints a CAN message to a file
  *  @param *message CAN message to be printed to the file
@@ -137,8 +133,8 @@ void FilePrintString(char *text, SdFile *file)
 }
 
 /** Checks the status of the SD card
- * @param SD card object
- * @return Status of SD card communications 
+ *  @param SD card object
+ *  @return Status of SD card communications 
  */
 bool CheckStatus(SdFat *sd)
 {

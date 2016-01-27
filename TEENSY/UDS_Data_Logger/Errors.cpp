@@ -20,7 +20,7 @@ error_t ErrorTable[]
 };
 
 /** Gets the error type for an error
- * @param error Error to be searched
+ *  @param error Error to be searched
  */
 ErrorType_e GetErrorType(Error_e error)
 {
@@ -28,7 +28,7 @@ ErrorType_e GetErrorType(Error_e error)
 }
 
 /** Gets the error message for an error
- * @param error Error to be searched
+ *  @param error Error to be searched
  */
 char *GetErrorMessage(Error_e error)
 {
@@ -36,7 +36,7 @@ char *GetErrorMessage(Error_e error)
 }
 
 /** Handles a recorded error
- * @param error Error flagged
+ *  @param error Error flagged
  */
 void HandleError(Error_e error)
 {

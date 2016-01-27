@@ -24,7 +24,6 @@ void LinearBufferInit(linear_buffer_t *lb, size_t capacity, size_t itemSize)
   lb->isFull = false;
 }
 
-
 /** Reinitializes linear buffer
  *  @param *cb Linear buffer struct to be reinitialized
  */
@@ -34,7 +33,6 @@ void LinearBufferReinit(linear_buffer_t *lb)
   lb->isFull = false;
 }
 
-
 /** Frees linear buffer
  *  @param *lb Linear buffer struct to be freed
  */
@@ -42,7 +40,6 @@ void LinearBufferFree(linear_buffer_t *lb)
 {
   free(lb->bufferStart);
 }
-
 
 /** Pushs a value onto the linear buffer
  *  @param *lb Linear buffer struct to be pushed to
@@ -58,7 +55,6 @@ void LinearBufferPush(linear_buffer_t *lb, can_message_t *item)
     lb->isFull = true;
   }
 }
-
 
 /** Dumps all linear buffer data to an open file on the SD Card and reinitializes the linear buffer
  *  @param *lb Linear buffer struct to be dumped to SD

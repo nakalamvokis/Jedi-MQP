@@ -39,10 +39,11 @@ bool MakeDirectory(char *dirName, SdFat *sd)
 }
 
 /** Opens a new file and prints a timestamp header
- *  @param *fileName Name of file on SD card
+ *  @param *filePath Full path of file
+ *  @param *fileName Name of file
  *  @param *file File to be configured
  */
-bool ConfigureDataFile(char *filePath, SdFile *file)
+bool ConfigureDataFile(char *filePath, char* fileName, SdFile *file)
 {
   bool status = true;
   if (!file->open(filePath, O_RDWR | O_CREAT | O_AT_END)) 
@@ -50,7 +51,7 @@ bool ConfigureDataFile(char *filePath, SdFile *file)
     HandleError(eERR_SD_FAILED_FILE_OPEN_FOR_WRITE);
     status = false;
   }
-  file->println(filePath);
+  file->println(fileName);
   file->println();
   file->print("TIMESTAMP (MS)");
   file->print("\t");
@@ -68,11 +69,13 @@ bool ConfigureDataFile(char *filePath, SdFile *file)
  *  @param fileNumber File number to be appended to the end of the file name
  *  @param pathSize Size of the file name
  */
-void OpenNewDataFile(SdFile *file, char *directory, const char *fileName, uint32_t fileNumber, size_t pathSize)
+void OpenNewDataFile(SdFile *file, char *directory, const char *fileName, uint32_t fileNumber, size_t nameSize, size_t pathSize)
 {
   char filePath[pathSize];
-  snprintf(filePath, pathSize, "%s/%s%lu.txt", directory, fileName, fileNumber);
-  ConfigureDataFile(filePath, file); 
+  char fullFileName[nameSize];
+  snprintf(fullFileName, nameSize, "%s%lu.txt", fileName, fileNumber);
+  snprintf(filePath, pathSize, "%s/%s", directory, fullFileName);
+  ConfigureDataFile(filePath, fullFileName, file); 
 }
 
 /** Reads all contents of a file
@@ -121,12 +124,11 @@ bool DeleteAllFiles(SdFat *sd)
  *  @param *file File to be printed to
  * 
  */
-void FilePrintMessage(can_message_t *message, SdFile *file)
+void FileWriteMessage(can_message_t *message, SdFile *file)
 {
   uint8_t currentData = 0;
   file->print(message->timestamp, DEC);
-  file->print("\t");
-  file->print("\t");
+  file->print("\t\t");
   file->print(message->id, HEX);
   file->print("\t");
   for (currentData = 0; currentData < message->len; currentData++)

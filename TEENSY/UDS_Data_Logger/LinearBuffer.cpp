@@ -51,7 +51,6 @@ void LinearBufferPush(linear_buffer_t *lb, can_message_t *item)
   lb->next++;
   if (lb->next == lb->bufferEnd)
   {
-    lb->next = lb->bufferStart;
     lb->isFull = true;
   }
 }
@@ -79,13 +78,14 @@ uint16_t LinearBufferDumpToFile(linear_buffer_t *lb, SdFile *lbFile)
   // iterate through linear buffer until we reach the end of the data
   while ((messageCount == 0) || (currentMessage != readEnd))
   {
-    /* DIAG START */
+    /*
     lbFile->print("MSG: ");
     lbFile->print(" ");
     lbFile->print(messageCount, DEC);
     lbFile->print(" ");
-    /* DIAG END */
-    FilePrintMessage(currentMessage, lbFile);
+    */
+    
+    FileWriteMessage(currentMessage, lbFile);
     currentMessage++;
     messageCount++;
   }

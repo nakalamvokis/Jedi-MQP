@@ -99,13 +99,14 @@ uint16_t CircularBufferDumpToFile(circular_buffer_t *cb, SdFile *cbFile)
   // iterate through circular buffer until we reach the end of the data
   while ((messageCount == 0) || (currentMessage != readEnd))
   {
-    /* DIAG START */
+    /*
     cbFile->print("MSG: ");
     cbFile->print(" ");
     cbFile->print(messageCount, DEC);
     cbFile->print(" ");
-    /* DIAG END */
-    FilePrintMessage(currentMessage, cbFile);
+    */
+    
+    FileWriteMessage(currentMessage, cbFile);
     currentMessage++;
     messageCount++;
     if(currentMessage == cb->bufferEnd)

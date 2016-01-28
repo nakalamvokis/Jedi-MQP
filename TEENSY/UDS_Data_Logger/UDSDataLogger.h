@@ -22,7 +22,7 @@
 #define TEST_PACKET_TRANSFER_DELAY    1         // Packet simulation send delay time
 #define SD_CHIP_SELECT                10        // Chip select pin for SD card
 #define TIMESTAMP_SIZE                30        // Size of timestamp string
-#define FILE_NAME_SIZE                20        // Size of file name string
+#define FILE_NAME_SIZE                30        // Size of file name string
 #define FILE_PATH_SIZE                60        // Maximum size of file names
 
 /* ENUMS */

@@ -17,7 +17,7 @@
 
 /* DEFINES */
 #define CIRCULAR_BUFFER_CAPACITY      1800      // Maximum capacity of the circular buffer, equates to ~1.2 seconds of CAN data
-#define LINEAR_BUFFER_CAPACITY        512       // Maximum capacity of the linear buffer
+#define LINEAR_BUFFER_CAPACITY        256       // Maximum capacity of the linear buffer
 #define MIN_CORRUPT_TRAFFIC_READINGS  90000     // Amount of corrupt CAN messages that will be recorded after each UDS message
 
 #define DIAG 1
@@ -51,9 +51,9 @@ void ChangeState(ReadType_e newReadType, NetworkState_e newNetworkState)
         Serial.println("Changing State: Circular -> Linear");
       #endif
       
-      OpenNewDataFile(&g_LbFile, g_Timestamp, lbFileName, g_Model.fileNumber, FILE_PATH_SIZE);
       g_Model.numUDSMessages = 1;
       g_Model.corruptMsgCount = 1;
+      OpenNewDataFile(&g_LbFile, g_Timestamp, lbFileName, g_Model.fileNumber, FILE_NAME_SIZE, FILE_PATH_SIZE);
       break;
     }
     case eREAD_CIRCULAR_BUFFER:
@@ -63,6 +63,7 @@ void ChangeState(ReadType_e newReadType, NetworkState_e newNetworkState)
       #endif
       
       g_Model.fileNumber++;
+      OpenNewDataFile(&g_CbFile, g_Timestamp, cbFileName, g_Model.fileNumber, FILE_NAME_SIZE, FILE_PATH_SIZE);
       break;
     }
     default:
@@ -101,6 +102,7 @@ void setup(void)
   DeleteAllFiles(&g_SD);
   SetTimestamp(g_Timestamp, TIMESTAMP_SIZE);
   MakeDirectory(g_Timestamp, &g_SD);
+  OpenNewDataFile(&g_CbFile, g_Timestamp, cbFileName, g_Model.fileNumber, FILE_NAME_SIZE, FILE_PATH_SIZE);
 }
 
 void loop(void)
@@ -119,8 +121,6 @@ void loop(void)
 
           if (newMessage.id == UDS_ID) // UDS message detected, an attack occured
           {
-            // Write contents of circular buffer to a new file
-            OpenNewDataFile(&g_CbFile, g_Timestamp, cbFileName, g_Model.fileNumber, FILE_PATH_SIZE);
             CircularBufferDumpToFile(&g_CB, &g_CbFile);
             g_CbFile.close();
 
@@ -147,13 +147,15 @@ void loop(void)
         {
           can_message_t newMessage;
           TransposeCanMessage(&newMessage, &newFrame);
+          LinearBufferPush(&g_LB, &newMessage);
+          g_Model.corruptMsgCount++;
+          g_Model.totalMsgCount++;
+          
           if (g_LB.isFull)
           {
             LinearBufferDumpToFile(&g_LB, &g_LbFile);
           }
-          LinearBufferPush(&g_LB, &newMessage);
-          g_Model.corruptMsgCount++;
-          g_Model.totalMsgCount++;
+
           if (newMessage.id == UDS_ID) // UDS message detected, an attack occured
           {
             #ifdef DIAG

@@ -17,17 +17,16 @@
 #include <DS1307RTC.h>
 #include "UDSDataLogger.h"
 
-/* CONSTANTS */
+/* DEFINES */
 #define CIRCULAR_BUFFER_CAPACITY      1800      // Maximum capacity of the circular buffer, equates to ~1.2 seconds of CAN data
 #define LINEAR_BUFFER_CAPACITY        512       // Maximum capacity of the linear buffer
 #define MIN_CORRUPT_TRAFFIC_READINGS  90000     // Amount of corrupt CAN messages that will be recorded after each UDS message
 
-#define UDS_ID                        0x7E8     // Arbitration ID of all UDS messages sent to the vehicle
-#define TEST_PACKET_TRANSFER_DELAY    1         // Packet simulation send delay time
-#define SD_CHIP_SELECT                10        // Chip select pin for SD card
-#define TIMESTAMP_SIZE                30        // Size of timestamp string
-#define FILE_NAME_SIZE                20        // Size of file name string
-#define FILE_PATH_SIZE                60        // Maximum size of file names
+#define DIAG 1
+
+/* CONSTANTS */
+const char cbFileName[FILE_NAME_SIZE] = "Before_UDS_Attack_";
+const char lbFileName[FILE_NAME_SIZE] = "After_UDS_Attack_";
 
 /* GLOBAL VARIABLES */
 circular_buffer_t g_CB;             // Circular buffer
@@ -50,16 +49,21 @@ void ChangeState(ReadType_e newReadType, NetworkState_e newNetworkState)
   {
     case eREAD_LINEAR_BUFFER:
     {
-      Serial.println("Changing State: Circular -> Linear");
-      char fileName[FILE_NAME_SIZE] = "After_UDS_Attack_";
-      OpenNewDataFile(&g_LbFile, g_Timestamp, fileName, g_Model.fileNumber, FILE_PATH_SIZE);
+      #ifdef DIAG
+        Serial.println("Changing State: Circular -> Linear");
+      #endif
+      
+      OpenNewDataFile(&g_LbFile, g_Timestamp, lbFileName, g_Model.fileNumber, FILE_PATH_SIZE);
       g_Model.numUDSMessages = 1;
       g_Model.corruptMsgCount = 1;
       break;
     }
     case eREAD_CIRCULAR_BUFFER:
     {
-      Serial.println("Changing State: Linear -> Circular");
+      #ifdef DIAG
+        Serial.println("Changing State: Linear -> Circular");
+      #endif
+      
       g_Model.fileNumber++;
       break;
     }
@@ -118,13 +122,15 @@ void loop(void)
           if (newMessage.id == UDS_ID) // UDS message detected, an attack occured
           {
             // Write contents of circular buffer to a new file
-            char fileName[FILE_NAME_SIZE] = "Before_UDS_Attack_";
-            OpenNewDataFile(&g_CbFile, g_Timestamp, fileName, g_Model.fileNumber, FILE_PATH_SIZE);
+            OpenNewDataFile(&g_CbFile, g_Timestamp, cbFileName, g_Model.fileNumber, FILE_PATH_SIZE);
             CircularBufferDumpToFile(&g_CB, &g_CbFile);
             g_CbFile.close();
+
+            #ifdef DIAG
+              Serial.print("  Attack found: ");
+              SerialPrintCanMessage(&newMessage);
+            #endif
             
-            Serial.print("  Attack found: ");
-            SerialPrintCanMessage(&newMessage);
             ChangeState(eREAD_LINEAR_BUFFER, eSTATE_CORRUPT_TRAFFIC);
             LinearBufferPush(&g_LB, &newMessage);
           }
@@ -152,9 +158,12 @@ void loop(void)
           g_Model.totalMsgCount++;
           if (newMessage.id == UDS_ID) // UDS message detected, an attack occured
           {
-            Serial.print("  Another UDS Message found: ");
-            Serial.print(newMessage.id, HEX);
-            Serial.println(" (Extending read time)");
+            #ifdef DIAG
+              Serial.print("  Another UDS Message found: ");
+              Serial.print(newMessage.id, HEX);
+              Serial.println(" (Extending read time)");
+            #endif
+            
             g_Model.corruptMsgCount = 0;
             g_Model.numUDSMessages++;
           }

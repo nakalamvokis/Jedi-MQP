@@ -68,7 +68,7 @@ bool ConfigureDataFile(char *filePath, SdFile *file)
  *  @param fileNumber File number to be appended to the end of the file name
  *  @param pathSize Size of the file name
  */
-void OpenNewDataFile(SdFile *file, char *directory, char *fileName, uint32_t fileNumber, size_t pathSize)
+void OpenNewDataFile(SdFile *file, char *directory, const char *fileName, uint32_t fileNumber, size_t pathSize)
 {
   char filePath[pathSize];
   snprintf(filePath, pathSize, "%s/Before_UDS_Attack_%lu.txt", directory, fileNumber);

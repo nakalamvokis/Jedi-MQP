@@ -12,6 +12,7 @@
 /* INCLUDES */
 #include <can.h>
 
+/* DEFINES */
 #define ERROR_CONTEXT_SIZE 100
 
 /* ENUMS */

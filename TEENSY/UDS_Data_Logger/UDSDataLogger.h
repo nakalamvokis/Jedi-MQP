@@ -1,7 +1,7 @@
 /*
-  * File Name: UDSDataLogger.h
-  * Date: 1/26/2016
-  * Author: Nicholas Kalamvokis
+  * @file UDSDataLogger.h
+  * @author Nicholas Kalamvokis
+  * @date 1/26/2016
   *
   * 
 */

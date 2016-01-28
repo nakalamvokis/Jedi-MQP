@@ -1,7 +1,7 @@
 /*
-  * File Name: CANMessage.h
-  * Date: 1/21/2016
-  * Author: Nicholas Kalamvokis
+  * @file CANMessage.h
+  * @author Nicholas Kalamvokis
+  * @date 1/21/2016
   *
   *
 */

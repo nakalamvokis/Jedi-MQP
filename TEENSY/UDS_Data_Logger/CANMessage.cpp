@@ -1,7 +1,7 @@
 /*
-  * File Name: CANMessage.cpp
-  * Date: 1/21/2016
-  * Author: Nicholas Kalamvokis
+  * @file CANMessage.cpp
+  * @author Nicholas Kalamvokis
+  * @date 1/21/2016
   *
   *
 */
@@ -9,7 +9,7 @@
 #include "CANMessage.h"
 
 /** Initializes CAN configuration parameters
- *  @param canConfig CAN configuration struct to be set
+ *  @param *canConfig CAN configuration struct to be set
  */
 void CanConfigInit(FLEXCAN_config_t *canConfig)
 {
@@ -22,7 +22,7 @@ void CanConfigInit(FLEXCAN_config_t *canConfig)
 
 
 /** Reads a CAN message from the FIFO queue
- *  @param *frame Pointer to frame struct to be populated with message data
+ *  @param *frame Frame struct to be populated with message data
  *  @return Whether or not a message was read from the FIFO queue
  */
 bool CanFifoRead(FLEXCAN_frame_t *frame)
@@ -36,7 +36,7 @@ bool CanFifoRead(FLEXCAN_frame_t *frame)
 }
 
 /** Prints a message to the serial port
- *  @param message Message struct containing message data
+ *  @param *message Message struct containing message data
  */
 void SerialPrintCanMessage(can_message_t *message)
 {
@@ -54,7 +54,7 @@ void SerialPrintCanMessage(can_message_t *message)
 }
 
 /** Prints a frame to the serial port
- *  @param frame Frame struct containing message data
+ *  @param *frame Frame struct containing message data
  */
 void SerialPrintFrame(FLEXCAN_frame_t *frame)
 {
@@ -74,7 +74,7 @@ void SerialPrintFrame(FLEXCAN_frame_t *frame)
 
 /** Generates a random CAN frame
  *  This function will only be used for testing purposes
- *  @param frame Frame to be filled with random data
+ *  @param *frame Frame to be filled with random data
  *  @param minID Minimim ID of generated frame
  *  @param maxID Maximum ID of generated frame
  *  @return If a frame was generated or not

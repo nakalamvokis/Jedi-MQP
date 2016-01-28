@@ -1,7 +1,7 @@
 /*
-  * File Name: Errors.cpp
-  * Date: 1/25/2016
-  * Author: Nicholas Kalamvokis
+  * @file Errors.cpp
+  * @author Nicholas Kalamvokis
+  * @date 1/25/2016
   *
   *
 */
@@ -41,7 +41,9 @@ char *GetErrorMessage(Error_e error)
  */
 void HandleError(Error_e error)
 {
+  delay(1000);
   Serial.println(GetErrorMessage(error));
+  delay(1000);
   switch (GetErrorType(error))
   {
     case eERRTYPE_NON_RECOVERABLE:

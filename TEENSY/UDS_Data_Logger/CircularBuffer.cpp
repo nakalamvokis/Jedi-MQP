@@ -1,7 +1,7 @@
 /*
-  * File Name: CircularBuffer.cpp
-  * Date: 1/21/2016
-  * Author: Nicholas Kalamvokis
+  * @file CircularBuffer.cpp
+  * @author Nicholas Kalamvokis
+  * @date 1/21/2016
   *
   *
 */

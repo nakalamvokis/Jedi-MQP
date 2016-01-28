@@ -1,7 +1,7 @@
 /*
-  * File Name: LinearBuffer.cpp
-  * Date: 1/21/2016
-  * Author: Nicholas Kalamvokis
+  * @file LinearBuffer.cpp
+  * @author Nicholas Kalamvokis
+  * @date 1/21/2016
   *
   * 
 */
@@ -25,7 +25,7 @@ void LinearBufferInit(linear_buffer_t *lb, size_t capacity, size_t itemSize)
 }
 
 /** Reinitializes linear buffer
- *  @param *cb Linear buffer struct to be reinitialized
+ *  @param *lb Linear buffer struct to be reinitialized
  */
 void LinearBufferReinit(linear_buffer_t *lb)
 {

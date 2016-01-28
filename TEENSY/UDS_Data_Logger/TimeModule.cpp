@@ -1,7 +1,7 @@
 /*
-  * File Name: TimeModule.cpp
-  * Date: 1/27/2016
-  * Author: Nicholas Kalamvokis
+  * @file TimeModule.cpp
+  * @author Nicholas Kalamvokis
+  * @date 1/27/2016
   *
   * 
 */
@@ -17,7 +17,7 @@ bool RTCInit()
 {
   bool status = true;
   setSyncProvider(RTC.get);
-  if(timeStatus()!= timeSet)
+  if(timeStatus() != timeSet)
   {
     HandleError(eERR_UNABLE_TO_SYNC_RTC);
     status = false;
@@ -28,6 +28,7 @@ bool RTCInit()
 /** Creates a detailed timestamp in the format YYYY-MM-DD_HH-MM-SS
  *  This will be used to create the header timestamp on files saved the the SD Card
  *  @param *timestamp String to be populated with the timestamp
+ *  @param strLen Maximum length of the timestamp string
  */
 void SetTimestamp(char *timestamp, size_t strLen)
 {
@@ -41,8 +42,7 @@ void SetTimestamp(char *timestamp, size_t strLen)
   snprintf(timestamp, strLen, "%04d-%02d-%02d_%02d-%02d-%02d", Year, Month, Day, Hour, Minute, Second);
 }
 
-/** Prints the current time to the serial port
- *  
+/** Prints the current time to the serial port 
  */
 void PrintTime()
 {

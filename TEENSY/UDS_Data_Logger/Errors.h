@@ -1,7 +1,7 @@
 /*
-  * File Name: Errors.h
-  * Date: 1/25/2016
-  * Author: Nicholas Kalamvokis
+  * @file Errors.h
+  * @author Nicholas Kalamvokis
+  * @date 1/25/2016
   *
   *
 */

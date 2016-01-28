@@ -1,9 +1,7 @@
-#include <DS1307RTC.h>
-
 /*
-  * File Name: UDS_Data_Logger.ino
-  * Date: 1/21/2016
-  * Author: Nicholas Kalamvokis
+  * @file UDS_Data_Logger.ino
+  * @author Nicholas Kalamvokis
+  * @date 1/21/2016
   *
   *
 */
@@ -96,7 +94,7 @@ void setup(void)
   LinearBufferInit(&g_LB, LINEAR_BUFFER_CAPACITY, sizeof(can_message_t));
 
   /* Timing Configuration */
-  RTCInit();
+ // RTCInit();
 
   /* File Writing Configuration */
   SdInit(&g_SD, SD_CHIP_SELECT);

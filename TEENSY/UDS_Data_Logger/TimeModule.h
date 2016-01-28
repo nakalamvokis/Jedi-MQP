@@ -1,7 +1,7 @@
 /*
-  * File Name: TimeModule.h
-  * Date: 1/27/2016
-  * Author: Nicholas Kalamvokis
+  * @file TimeModule.h
+  * @author Nicholas Kalamvokis
+  * @date 1/27/2016
   *
   * 
 */

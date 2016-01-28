@@ -1,7 +1,7 @@
 /*
-  * File Name: SDCard.cpp
-  * Date: 1/21/2016
-  * Author: Nicholas Kalamvokis
+  * @file SDCard.cpp
+  * @author Nicholas Kalamvokis
+  * @date 1/21/2016
   *
   * 
 */
@@ -9,7 +9,7 @@
 #include "SDCard.h"
 
 /** Initializes SD Card
- *  @param sd SD card object
+ *  @param *sd SD card object
  *  @param chipSelect Chip select pin for SD card reader
  */
 bool SdInit(SdFat *sd, uint8_t chipSelect)
@@ -62,16 +62,16 @@ bool ConfigureDataFile(char *filePath, SdFile *file)
 }
 
 /** Opens and configures a new data file for write
- *  @param file SD file object
- *  @param directory Directory of the new data file
- *  @param fileName Name of new file
+ *  @param *file SD file object
+ *  @param *directory Directory of the new data file
+ *  @param *fileName Name of new file
  *  @param fileNumber File number to be appended to the end of the file name
  *  @param pathSize Size of the file name
  */
 void OpenNewDataFile(SdFile *file, char *directory, const char *fileName, uint32_t fileNumber, size_t pathSize)
 {
   char filePath[pathSize];
-  snprintf(filePath, pathSize, "%s/Before_UDS_Attack_%lu.txt", directory, fileNumber);
+  snprintf(filePath, pathSize, "%s/%s%lu.txt", directory, fileName, fileNumber);
   ConfigureDataFile(filePath, file); 
 }
 
@@ -102,7 +102,7 @@ bool ReadFile(char *fileName, SdFile *file)
 }
 
 /** Deletes all files on the SD card
- *  @param sd SD card object
+ *  @param *sd SD card object
  *  @return Whether or not the rm was successful
  */
 bool DeleteAllFiles(SdFat *sd)
@@ -138,7 +138,7 @@ void FilePrintMessage(can_message_t *message, SdFile *file)
 }
 
 /** Checks the status of the SD card
- *  @param SD card object
+ *  @param *sd SD card object
  *  @return Status of SD card communications 
  */
 bool CheckStatus(SdFat *sd)

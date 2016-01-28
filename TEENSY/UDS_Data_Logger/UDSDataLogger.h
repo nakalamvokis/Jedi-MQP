@@ -44,8 +44,6 @@ typedef struct {
 
 /* FUNCTION PROTOTYPES */
 void ChangeState(ReadType_e newReadType, NetworkState_e newNetworkState);
-void OpenNewCBFile(SdFile *file, char *directory, size_t nameSize, uint32_t fileNumber);
-void OpenNewLBFile(SdFile *file, char *directory, size_t nameSize, uint32_t fileNumber);
 
 #endif // UDSDATALOGGER_H
 

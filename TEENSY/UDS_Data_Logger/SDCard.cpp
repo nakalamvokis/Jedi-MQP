@@ -42,15 +42,15 @@ bool MakeDirectory(char *dirName, SdFat *sd)
  *  @param *fileName Name of file on SD card
  *  @param *file File to be configured
  */
-bool ConfigureFile(char *fileName, SdFile *file)
+bool ConfigureDataFile(char *filePath, SdFile *file)
 {
   bool status = true;
-  if (!file->open(fileName, O_RDWR | O_CREAT | O_AT_END)) 
+  if (!file->open(filePath, O_RDWR | O_CREAT | O_AT_END)) 
   {
     HandleError(eERR_SD_FAILED_FILE_OPEN_FOR_WRITE);
     status = false;
   }
-  file->println(fileName);
+  file->println(filePath);
   file->println();
   file->print("TIMESTAMP (MS)");
   file->print("\t");
@@ -59,6 +59,20 @@ bool ConfigureFile(char *fileName, SdFile *file)
   file->print("DATA");
   file->println();
   return status;
+}
+
+/** Opens and configures a new data file for write
+ *  @param file SD file object
+ *  @param directory Directory of the new data file
+ *  @param fileName Name of new file
+ *  @param fileNumber File number to be appended to the end of the file name
+ *  @param pathSize Size of the file name
+ */
+void OpenNewDataFile(SdFile *file, char *directory, char *fileName, uint32_t fileNumber, size_t pathSize)
+{
+  char filePath[pathSize];
+  snprintf(filePath, pathSize, "%s/Before_UDS_Attack_%lu.txt", directory, fileNumber);
+  ConfigureDataFile(filePath, file); 
 }
 
 /** Reads all contents of a file
@@ -121,15 +135,6 @@ void FilePrintMessage(can_message_t *message, SdFile *file)
     file->print(" ");
   }
   file->println();
-}
-
-/** Prints text to a file
- *  @param *text String to be printed to the file
- *  @param *file File to be printed to
- */
-void FilePrintString(char *text, SdFile *file)
-{
-  file->println(text);
 }
 
 /** Checks the status of the SD card

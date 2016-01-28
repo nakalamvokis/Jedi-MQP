@@ -8,6 +8,22 @@
 
 /* INCLUDES */
 #include "TimeModule.h"
+#include "Errors.h"
+
+/** Initializes RTC
+ *  @return Status of the clock initialization
+ */
+bool RTCInit()
+{
+  bool status = true;
+  setSyncProvider(RTC.get);
+  if(timeStatus()!= timeSet)
+  {
+    HandleError(eERR_UNABLE_TO_SYNC_RTC);
+    status = false;
+  }
+  return status;
+}
 
 /** Creates a detailed timestamp in the format YYYY-MM-DD_HH-MM-SS
  *  This will be used to create the header timestamp on files saved the the SD Card

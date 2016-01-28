@@ -20,12 +20,14 @@
 /* CONSTANTS */
 #define CIRCULAR_BUFFER_CAPACITY      1800      // Maximum capacity of the circular buffer, equates to ~1.2 seconds of CAN data
 #define LINEAR_BUFFER_CAPACITY        512       // Maximum capacity of the linear buffer
+#define MIN_CORRUPT_TRAFFIC_READINGS  90000     // Amount of corrupt CAN messages that will be recorded after each UDS message
+
 #define UDS_ID                        0x7E8     // Arbitration ID of all UDS messages sent to the vehicle
 #define TEST_PACKET_TRANSFER_DELAY    1         // Packet simulation send delay time
 #define SD_CHIP_SELECT                10        // Chip select pin for SD card
-#define TIMESTAMP_SIZE                40        // Size of timestamp string
-#define MIN_CORRUPT_TRAFFIC_READINGS  90000     // Amount of corrupt CAN messages that will be recorded after each UDS message
-#define FILE_NAME_SIZE                50        // Maximum size of file names
+#define TIMESTAMP_SIZE                30        // Size of timestamp string
+#define FILE_NAME_SIZE                20        // Size of file name string
+#define FILE_PATH_SIZE                60        // Maximum size of file names
 
 /* GLOBAL VARIABLES */
 circular_buffer_t g_CB;             // Circular buffer
@@ -43,12 +45,14 @@ void ChangeState(ReadType_e newReadType, NetworkState_e newNetworkState)
 {
   g_Model.readType = newReadType;
   g_Model.networkState = newNetworkState;
+  
   switch (newReadType)
   {
     case eREAD_LINEAR_BUFFER:
     {
       Serial.println("Changing State: Circular -> Linear");
-      OpenNewLBFile(&g_LbFile, g_Timestamp, FILE_NAME_SIZE, g_Model.fileNumber);
+      char fileName[FILE_NAME_SIZE] = "After_UDS_Attack_";
+      OpenNewDataFile(&g_LbFile, g_Timestamp, fileName, g_Model.fileNumber, FILE_PATH_SIZE);
       g_Model.numUDSMessages = 1;
       g_Model.corruptMsgCount = 1;
       break;
@@ -64,32 +68,6 @@ void ChangeState(ReadType_e newReadType, NetworkState_e newNetworkState)
       break;
     }
   }
-}
-
-/** Opens and configures a new circular buffer file
- *  @param file SD file object
- *  @param directory Directory of the new data file
- *  @param nameSize Size of the file name
- *  @param fileNumber File number to be appended to the end of the file name
- */
-void OpenNewCBFile(SdFile *file, char *directory, size_t nameSize, uint32_t fileNumber)
-{
-  char fileName[nameSize];
-  snprintf(fileName, nameSize, "%s/Before_UDS_Attack_%lu.txt", directory, fileNumber);
-  ConfigureFile(fileName, file); 
-}
-
-/** Opens and configures a new linear buffer data file
- *  @param file SD file object
- *  @param directory Directory of the new file
- *  @param nameSize Size of the file name
- *  @param fileNumber File number to be appended to the end of the file name
- */
-void OpenNewLBFile(SdFile *file, char *directory, size_t nameSize, uint32_t fileNumber)
-{
-  char fileName[nameSize];
-  snprintf(fileName, nameSize, "%s/After_UDS_Attack_%lu.txt", directory, fileNumber);
-  ConfigureFile(fileName, file); 
 }
 
 void setup(void)
@@ -114,13 +92,7 @@ void setup(void)
   LinearBufferInit(&g_LB, LINEAR_BUFFER_CAPACITY, sizeof(can_message_t));
 
   /* Timing Configuration */
-  setSyncProvider(RTC.get);
-  if(timeStatus()!= timeSet)
-  {
-    delay(1000);
-    Serial.println("Unable to sync with the RTC");
-    delay(1000);
-  }
+  RTCInit();
 
   /* File Writing Configuration */
   SdInit(&g_SD, SD_CHIP_SELECT);
@@ -146,7 +118,8 @@ void loop(void)
           if (newMessage.id == UDS_ID) // UDS message detected, an attack occured
           {
             // Write contents of circular buffer to a new file
-            OpenNewCBFile(&g_CbFile, g_Timestamp, FILE_NAME_SIZE, g_Model.fileNumber);
+            char fileName[FILE_NAME_SIZE] = "Before_UDS_Attack_";
+            OpenNewDataFile(&g_CbFile, g_Timestamp, fileName, g_Model.fileNumber, FILE_PATH_SIZE);
             CircularBufferDumpToFile(&g_CB, &g_CbFile);
             g_CbFile.close();
             
@@ -188,10 +161,9 @@ void loop(void)
           else if (g_Model.corruptMsgCount >= MIN_CORRUPT_TRAFFIC_READINGS)
           {
             LinearBufferDumpToFile(&g_LB, &g_LbFile);
-            // Write UDS message count for this attack to the "after attack" file
             char UDSMsgCountString[50];
             sprintf(UDSMsgCountString, "UDS Messages Recorded: %lu", g_Model.numUDSMessages);
-            FilePrintString(UDSMsgCountString, &g_LbFile);
+            g_LbFile.println(UDSMsgCountString);
             g_LbFile.close();
             
             ChangeState(eREAD_CIRCULAR_BUFFER, eSTATE_CORRUPT_TRAFFIC);

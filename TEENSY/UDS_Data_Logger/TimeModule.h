@@ -16,6 +16,7 @@
 #include <stdio.h>
 
 /* FUNCTION PROTOTYPES */
+bool RTCInit();
 void SetTimestamp(char *timestamp, size_t strLen);
 void PrintTime();
 

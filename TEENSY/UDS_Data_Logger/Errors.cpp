@@ -10,14 +10,15 @@
 
 error_t ErrorTable[]
 {
-  {eERR_NONE,                           eERRTYPE_NONE,              ""},
-  {eERR_SD_FAILED_INIT,                 eERRTYPE_NON_RECOVERABLE,   "SD card failed initialization."},
-  {eERR_SD_FAILED_FILE_OPEN_FOR_READ,   eERRTYPE_AUTO_RESUME,       "SD card failed to open a file for read."},
-  {eERR_SD_FAILED_FILE_OPEN_FOR_WRITE,  eERRTYPE_NON_RECOVERABLE,   "SD card failed to open a file for write."},
-  {eERR_SD_FAILED_FILE_DELETE,          eERRTYPE_NON_RECOVERABLE,   "SD card failed to delete a file."},
-  {eERR_SD_FAILED_TO_CREATE_DIRECTORY,  eERRTYPE_NON_RECOVERABLE,   "SD card failed to create a directory."},
-  {eERR_SD_LOST_COMMUNICATIONS,         eERRTYPE_NON_RECOVERABLE,   "Lost communications with SD card."},
-  {eERR_UNABLE_TO_SYNC_RTC,             eERRTYPE_NON_RECOVERABLE,   "Unable to sync with RTC."}
+  {eERR_NONE,                             eERRTYPE_NONE,              ""},
+  {eERR_SD_FAILED_INIT,                   eERRTYPE_NON_RECOVERABLE,   "SD card failed initialization."},
+  {eERR_SD_FAILED_FILE_OPEN_FOR_READ,     eERRTYPE_AUTO_RESUME,       "SD card failed to open a file for read."},
+  {eERR_SD_FAILED_FILE_OPEN_FOR_WRITE,    eERRTYPE_NON_RECOVERABLE,   "SD card failed to open a file for write."},
+  {eERR_SD_FAILED_FILE_DELETE,            eERRTYPE_NON_RECOVERABLE,   "SD card failed to delete a file."},
+  {eERR_SD_FAILED_TO_CREATE_DIRECTORY,    eERRTYPE_NON_RECOVERABLE,   "SD card failed to create a directory."},
+  {eERR_SD_LOST_COMMUNICATIONS,           eERRTYPE_NON_RECOVERABLE,   "Lost communications with SD card."},
+  {eERR_SD_FAILED_TO_EDIT_FILE_TIMESTAMP, eERRTYPE_AUTO_RESUME,       "SD card failed to edit file timestamp."},
+  {eERR_UNABLE_TO_SYNC_RTC,               eERRTYPE_NON_RECOVERABLE,   "Unable to sync with RTC."}
 };
 
 /** Gets the error type for an error

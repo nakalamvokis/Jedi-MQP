@@ -90,6 +90,7 @@ uint16_t LinearBufferDumpToFile(linear_buffer_t *lb, SdFile *lbFile)
     messageCount++;
   }
   LinearBufferReinit(lb);
+  SetFileEditTime(lbFile);
   return messageCount;
 }
 

@@ -11,6 +11,8 @@
 
 /* INCLUDES */
 #include <SdFat.h>
+#include <Time.h>
+#include <DS1307RTC.h>
 #include "CANMessage.h"
 #include "Errors.h"
 
@@ -23,6 +25,9 @@ bool ReadFile(char *fileName, SdFile *file);
 bool DeleteAllFiles(SdFat *sd);
 void FileWriteMessage(can_message_t *message, SdFile *file);
 bool CheckStatus(SdFat *sd);
+bool SetFileCreateTime(SdFile *file);
+bool SetFileEditTime(SdFile *file);
+bool SetFileAccessTime(SdFile *file);
 
 #endif // SDCARD_H
 

@@ -46,11 +46,14 @@ bool MakeDirectory(char *dirName, SdFat *sd)
 bool ConfigureDataFile(char *filePath, char* fileName, SdFile *file)
 {
   bool status = true;
+  
   if (!file->open(filePath, O_RDWR | O_CREAT | O_AT_END)) 
   {
     HandleError(eERR_SD_FAILED_FILE_OPEN_FOR_WRITE);
     status = false;
   }
+
+  SetFileCreateTime(file);
   file->println(fileName);
   file->println();
   file->print("TIMESTAMP (MS)");
@@ -93,7 +96,8 @@ bool ReadFile(char *fileName, SdFile *file)
   }
   else
   {
-    int data; // changed from uint8_t to int -> check into this
+    int data;
+    SetFileAccessTime(file);
     while ((data = file->read()) >= 0) 
     {
       delay(1);
@@ -150,6 +154,58 @@ bool CheckStatus(SdFat *sd)
   if (!sd->card()->readOCR(&ocr)) 
   {
     HandleError(eERR_SD_LOST_COMMUNICATIONS);
+    status = false;
+  }
+  return status;
+}
+
+/** Sets the creation date of a file to the current time
+ *  @param *file File to be edited
+ *  @return Status of the timestamp edit
+ */
+bool SetFileCreateTime(SdFile *file)
+{
+  bool status = true;
+  time_t t = now();
+  
+  if (!file->timestamp(T_CREATE, year(t), month(t), day(t), hour(t), minute(t), second(t))) 
+  {
+    HandleError(eERR_SD_FAILED_TO_EDIT_FILE_TIMESTAMP);
+    status = false;
+  }
+  return status;
+}
+
+/** Sets the edit date of a file to the current time
+ *  @param *file File to be edited
+ *  @return Status of the timestamp edit
+ */
+bool SetFileEditTime(SdFile *file)
+{
+  bool status = true;
+  time_t t = now();
+  
+  if (!file->timestamp(T_WRITE, year(t), month(t), day(t), hour(t), minute(t), second(t))) 
+  {
+    HandleError(eERR_SD_FAILED_TO_EDIT_FILE_TIMESTAMP);
+    status = false;
+  }
+  SetFileAccessTime(file); // Access in included in write
+  return status;
+}
+
+/** Sets the access date of a file to the current time
+ *  @param *file File to be edited
+ *  @return Status of the timestamp edit
+ */
+bool SetFileAccessTime(SdFile *file)
+{
+  bool status = true;
+  time_t t = now();
+  
+  if (!file->timestamp(T_ACCESS, year(t), month(t), day(t), hour(t), minute(t), second(t))) 
+  {
+    HandleError(eERR_SD_FAILED_TO_EDIT_FILE_TIMESTAMP);
     status = false;
   }
   return status;

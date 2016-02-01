@@ -40,9 +40,6 @@ void SetTimestamp(char *timestamp, size_t strLen)
   uint16_t Minute = minute(t);
   uint16_t Second = second(t);
   snprintf(timestamp, strLen, "%04d-%02d-%02d_%02d-%02d-%02d", Year, Month, Day, Hour, Minute, Second);
-  delay(1000);
-  Serial.println(timestamp);
-  delay(1000);
 }
 
 /** Prints the current time to the serial port 

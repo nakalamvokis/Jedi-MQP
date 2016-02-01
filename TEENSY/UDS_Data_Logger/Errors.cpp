@@ -41,7 +41,9 @@ char *GetErrorMessage(Error_e error)
  */
 void HandleError(Error_e error)
 {
+  delay(1000);
   Serial.println(GetErrorMessage(error));
+  delay(1000);
   
   switch (GetErrorType(error))
   {

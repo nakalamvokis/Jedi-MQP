@@ -95,7 +95,7 @@ void setup(void)
   LinearBufferInit(&g_LB, LINEAR_BUFFER_CAPACITY, sizeof(can_message_t));
 
   /* Timing Configuration */
- // RTCInit();
+  RTCInit();
 
   /* File Writing Configuration */
   SdInit(&g_SD, SD_CHIP_SELECT);

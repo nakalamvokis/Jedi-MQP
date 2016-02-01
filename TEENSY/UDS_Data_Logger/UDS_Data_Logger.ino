@@ -99,7 +99,6 @@ void setup(void)
 
   /* File Writing Configuration */
   SdInit(&g_SD, SD_CHIP_SELECT);
-  DeleteAllFiles(&g_SD);
   SetTimestamp(g_Timestamp, TIMESTAMP_SIZE);
   MakeDirectory(g_Timestamp, &g_SD);
   OpenNewDataFile(&g_CbFile, g_Timestamp, cbFileName, g_Model.fileNumber, FILE_NAME_SIZE, FILE_PATH_SIZE);

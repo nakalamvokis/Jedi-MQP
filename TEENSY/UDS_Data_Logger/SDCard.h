@@ -18,6 +18,7 @@
 
 /* FUNCTION PROTOTYPES */
 bool SdInit(SdFat *sd, uint8_t chipSelect);
+void dateTime(uint16_t *date, uint16_t *time);
 bool MakeDirectory(char *dirName, SdFat *sd);
 bool ConfigureDataFile(char *filePath, char* fileName, SdFile *file);
 void OpenNewDataFile(SdFile *file, char *directory, const char *fileName, uint32_t fileNumber, size_t nameSize, size_t pathSize);

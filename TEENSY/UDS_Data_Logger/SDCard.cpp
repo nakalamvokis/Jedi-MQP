@@ -15,12 +15,24 @@
 bool SdInit(SdFat *sd, uint8_t chipSelect)
 {
   bool status = true;
+  SdFile::dateTimeCallback(dateTime);
   if (!sd->begin(chipSelect, SPI_FULL_SPEED)) 
   {
     HandleError(eERR_SD_FAILED_INIT);
     status = false;
   }
   return status;
+}
+
+/** Sets the time for the SD card callback function
+ *  @param *date Compressed date value
+ *  @param &time Compressed time value
+ */
+void dateTime(uint16_t *date, uint16_t *time) 
+{
+  time_t t = now();
+  *date = FAT_DATE(year(t), month(t), day(t)); // FAT_DATE formats the date fields
+  *time = FAT_TIME(hour(t), minute(t), second(t)); // FAT_TIME formats the time fields
 }
 
 /** Makes a new directory on the SD Card
@@ -30,6 +42,7 @@ bool SdInit(SdFat *sd, uint8_t chipSelect)
 bool MakeDirectory(char *dirName, SdFat *sd)
 {
   bool status = true;
+  
   if (!sd->mkdir(dirName)) 
   {
     HandleError(eERR_SD_FAILED_TO_CREATE_DIRECTORY);
@@ -53,7 +66,6 @@ bool ConfigureDataFile(char *filePath, char* fileName, SdFile *file)
     status = false;
   }
 
-  SetFileCreateTime(file);
   file->println(fileName);
   file->println();
   file->print("TIMESTAMP (MS)");
@@ -154,58 +166,6 @@ bool CheckStatus(SdFat *sd)
   if (!sd->card()->readOCR(&ocr)) 
   {
     HandleError(eERR_SD_LOST_COMMUNICATIONS);
-    status = false;
-  }
-  return status;
-}
-
-/** Sets the creation date of a file to the current time
- *  @param *file File to be edited
- *  @return Status of the timestamp edit
- */
-bool SetFileCreateTime(SdFile *file)
-{
-  bool status = true;
-  time_t t = now();
-  
-  if (!file->timestamp(T_CREATE, year(t), month(t), day(t), hour(t), minute(t), second(t))) 
-  {
-    HandleError(eERR_SD_FAILED_TO_EDIT_FILE_TIMESTAMP);
-    status = false;
-  }
-  return status;
-}
-
-/** Sets the edit date of a file to the current time
- *  @param *file File to be edited
- *  @return Status of the timestamp edit
- */
-bool SetFileEditTime(SdFile *file)
-{
-  bool status = true;
-  time_t t = now();
-  
-  if (!file->timestamp(T_WRITE, year(t), month(t), day(t), hour(t), minute(t), second(t))) 
-  {
-    HandleError(eERR_SD_FAILED_TO_EDIT_FILE_TIMESTAMP);
-    status = false;
-  }
-  SetFileAccessTime(file); // Access in included in write
-  return status;
-}
-
-/** Sets the access date of a file to the current time
- *  @param *file File to be edited
- *  @return Status of the timestamp edit
- */
-bool SetFileAccessTime(SdFile *file)
-{
-  bool status = true;
-  time_t t = now();
-  
-  if (!file->timestamp(T_ACCESS, year(t), month(t), day(t), hour(t), minute(t), second(t))) 
-  {
-    HandleError(eERR_SD_FAILED_TO_EDIT_FILE_TIMESTAMP);
     status = false;
   }
   return status;

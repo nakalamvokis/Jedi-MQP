@@ -115,7 +115,6 @@ uint16_t CircularBufferDumpToFile(circular_buffer_t *cb, SdFile *cbFile)
     }
   }
   CircularBufferReinit(cb);
-  SetFileEditTime(cbFile);
   return messageCount;
 }
 

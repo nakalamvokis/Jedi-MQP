@@ -118,7 +118,6 @@ void setup(void)
   /* File Writing Configuration */
   SdInit(&g_SD, SD_CHIP_SELECT);
   SetTimestamp(g_Timestamp, TIMESTAMP_SIZE);
-  MakeDirectory(g_Timestamp, &g_SD);
 }
 
 void loop(void)
@@ -129,7 +128,7 @@ void loop(void)
     { 
       case eREAD_CIRCULAR_BUFFER:
       {
-        if (GenerateFrame(&newFrame, 0, 8192)) // (CanFifoRead(&newFrame)) // CURRENTLY SIMULATED
+        if (CanFifoRead(&newFrame)) //(GenerateFrame(&newFrame, 0, 8192))  // SIMULATION OFF
         {
           can_message_t newMessage;
           TransposeCanMessage(&newMessage, &newFrame);
@@ -137,6 +136,10 @@ void loop(void)
 
           if (newMessage.id == UDS_ID) // UDS message detected, an attack occured
           {
+            if (!g_SD.exists(g_Timestamp)) // create a new directory after the first attack
+            {
+              MakeDirectory(g_Timestamp, &g_SD);
+            }
             SetFileNameAndPath(g_currentFilePath, g_currentFileName, g_Timestamp, g_CbFileName, g_Model.fileNumber, FILE_NAME_SIZE, FILE_PATH_SIZE);
             OpenNewDataFile(&g_CurrentFile, g_currentFilePath, g_currentFileName);
             CircularBufferDumpToFile(&g_CB, &g_CurrentFile);
@@ -161,7 +164,7 @@ void loop(void)
 
       case eREAD_LINEAR_BUFFER:
       {
-        if (GenerateFrame(&newFrame, 0, 65535)) // (CanFifoRead(&newFrame)) // CURRENTLY SIMULATED
+        if (CanFifoRead(&newFrame)) //(GenerateFrame(&newFrame, 0, 65535)) // SIMULATION OFF
         {
           can_message_t newMessage;
           TransposeCanMessage(&newMessage, &newFrame);
@@ -198,7 +201,7 @@ void loop(void)
             
             ChangeState(eREAD_CIRCULAR_BUFFER, eSTATE_CORRUPT_TRAFFIC);
           }
-          delay(TEST_PACKET_TRANSFER_DELAY); // TEST CODE - SIMULATES TIME BETWEEN MSG TRANSFERS
+         // delay(TEST_PACKET_TRANSFER_DELAY); // TEST CODE - SIMULATES TIME BETWEEN MSG TRANSFERS
         }
         break;
       }

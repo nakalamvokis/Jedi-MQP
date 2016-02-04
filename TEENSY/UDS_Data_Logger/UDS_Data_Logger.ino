@@ -23,17 +23,35 @@
 #define DIAG 1
 
 /* CONSTANTS */
-const char cbFileName[FILE_NAME_SIZE] = "Before_UDS_Attack_";
-const char lbFileName[FILE_NAME_SIZE] = "After_UDS_Attack_";
+const char g_CbFileName[FILE_NAME_SIZE] = "Before_UDS_Attack_";
+const char g_LbFileName[FILE_NAME_SIZE] = "After_UDS_Attack_";
 
 /* GLOBAL VARIABLES */
-circular_buffer_t g_CB;             // Circular buffer
-linear_buffer_t g_LB;               // Linear buffer
-SdFat g_SD;                         // SD Card object
-SdFile g_CbFile;                    // Circular buffer file object
-SdFile g_LbFile;                    // Linear buffer file object
-model_t g_Model;                    // System model
-char g_Timestamp[TIMESTAMP_SIZE];   // Timestamp for each file saved to SD card, this marks the start time of the program
+circular_buffer_t g_CB;                 // Circular buffer
+linear_buffer_t g_LB;                   // Linear buffer
+SdFat g_SD;                             // SD Card object
+SdFile g_CbFile;                        // Circular buffer file object
+SdFile g_LbFile;                        // Linear buffer file object
+model_t g_Model;                        // System model
+char g_Timestamp[TIMESTAMP_SIZE];       // Timestamp for each file saved to SD card, this marks the start time of the program
+char g_currentFilePath[FILE_PATH_SIZE]; // Path of file traffic will be written to
+char g_currentFileName[FILE_NAME_SIZE]; // Name of file traffic will be written to
+
+/** Sets the file name and path for a new data file
+ *  This function is used to set these parameters before opening a new file
+ *  @param *filePath Full path of the file (to be set)
+ *  @param *fileName Name of the file (to be set)
+ *  @param *directory Directory of the new file
+ *  @param *fileTitle Name of new file
+ *  @param fileNumber File number to be appended to the end of the file name
+ *  @param nameSize Size of the file name
+ *  @param pathSize Size of the file path
+ */
+void SetFileNameAndPath(char *filePath, char *fileName, char *directory, const char *fileTitle, uint32_t fileNumber, size_t nameSize, size_t pathSize)
+{
+  snprintf(fileName, nameSize, "%s%lu.txt", fileTitle, fileNumber);
+  snprintf(filePath, pathSize, "%s/%s", directory, fileName);
+}
 
 /** Sets parameters during a state change
  *  @param newReadType New 
@@ -53,7 +71,9 @@ void ChangeState(ReadType_e newReadType, NetworkState_e newNetworkState)
       
       g_Model.numUDSMessages = 1;
       g_Model.corruptMsgCount = 1;
-      OpenNewDataFile(&g_LbFile, g_Timestamp, lbFileName, g_Model.fileNumber, FILE_NAME_SIZE, FILE_PATH_SIZE);
+      SetFileNameAndPath(g_currentFilePath, g_currentFileName, g_Timestamp, g_LbFileName, g_Model.fileNumber, FILE_NAME_SIZE, FILE_PATH_SIZE);
+      OpenNewDataFile(&g_LbFile, g_currentFilePath, g_currentFileName);
+      g_LbFile.close();
       break;
     }
     case eREAD_CIRCULAR_BUFFER:
@@ -63,7 +83,6 @@ void ChangeState(ReadType_e newReadType, NetworkState_e newNetworkState)
       #endif
       
       g_Model.fileNumber++;
-      OpenNewDataFile(&g_CbFile, g_Timestamp, cbFileName, g_Model.fileNumber, FILE_NAME_SIZE, FILE_PATH_SIZE);
       break;
     }
     default:
@@ -101,7 +120,6 @@ void setup(void)
   SdInit(&g_SD, SD_CHIP_SELECT);
   SetTimestamp(g_Timestamp, TIMESTAMP_SIZE);
   MakeDirectory(g_Timestamp, &g_SD);
-  OpenNewDataFile(&g_CbFile, g_Timestamp, cbFileName, g_Model.fileNumber, FILE_NAME_SIZE, FILE_PATH_SIZE);
 }
 
 void loop(void)
@@ -120,6 +138,8 @@ void loop(void)
 
           if (newMessage.id == UDS_ID) // UDS message detected, an attack occured
           {
+            SetFileNameAndPath(g_currentFilePath, g_currentFileName, g_Timestamp, g_CbFileName, g_Model.fileNumber, FILE_NAME_SIZE, FILE_PATH_SIZE);
+            OpenNewDataFile(&g_CbFile, g_currentFilePath, g_currentFileName);
             CircularBufferDumpToFile(&g_CB, &g_CbFile);
             g_CbFile.close();
 
@@ -152,7 +172,9 @@ void loop(void)
           
           if (g_LB.isFull)
           {
+            OpenDataFile(&g_LbFile, g_currentFilePath);
             LinearBufferDumpToFile(&g_LB, &g_LbFile);
+            g_LbFile.close();
           }
 
           if (newMessage.id == UDS_ID) // UDS message detected, an attack occured
@@ -168,6 +190,7 @@ void loop(void)
           }
           else if (g_Model.corruptMsgCount >= MIN_CORRUPT_TRAFFIC_READINGS)
           {
+            OpenDataFile(&g_LbFile, g_currentFilePath);
             LinearBufferDumpToFile(&g_LB, &g_LbFile);
             char UDSMsgCountString[50];
             sprintf(UDSMsgCountString, "UDS Messages Recorded: %lu", g_Model.numUDSMessages);

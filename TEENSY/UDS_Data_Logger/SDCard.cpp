@@ -51,21 +51,12 @@ bool MakeDirectory(char *dirName, SdFat *sd)
   return status;
 }
 
-/** Opens a new file and prints a timestamp header
- *  @param *filePath Full path of file
- *  @param *fileName Name of file
+/** Prints the file name and data column headers to a file
  *  @param *file File to be configured
+ *  @param *fileName Name of the file
  */
-bool ConfigureDataFile(char *filePath, char* fileName, SdFile *file)
+void ConfigureDataFile(SdFile *file, char* fileName)
 {
-  bool status = true;
-  
-  if (!file->open(filePath, O_RDWR | O_CREAT | O_AT_END)) 
-  {
-    HandleError(eERR_SD_FAILED_FILE_OPEN_FOR_WRITE);
-    status = false;
-  }
-
   file->println(fileName);
   file->println();
   file->print("TIMESTAMP (MS)");
@@ -74,23 +65,42 @@ bool ConfigureDataFile(char *filePath, char* fileName, SdFile *file)
   file->print("\t");
   file->print("DATA");
   file->println();
-  return status;
 }
 
 /** Opens and configures a new data file for write
  *  @param *file SD file object
- *  @param *directory Directory of the new data file
- *  @param *fileName Name of new file
- *  @param fileNumber File number to be appended to the end of the file name
- *  @param pathSize Size of the file name
+ *  @param *filePath Full path of the new file
+ *  @param *fileName Name of the new file
+ *  @return Status of the file open
  */
-void OpenNewDataFile(SdFile *file, char *directory, const char *fileName, uint32_t fileNumber, size_t nameSize, size_t pathSize)
+bool OpenNewDataFile(SdFile *file, char *filePath, char *fileName)
 {
-  char filePath[pathSize];
-  char fullFileName[nameSize];
-  snprintf(fullFileName, nameSize, "%s%lu.txt", fileName, fileNumber);
-  snprintf(filePath, pathSize, "%s/%s", directory, fullFileName);
-  ConfigureDataFile(filePath, fullFileName, file); 
+  bool status = true;
+  
+  if (!file->open(filePath, O_RDWR | O_CREAT | O_AT_END)) 
+  {
+    HandleError(eERR_SD_FAILED_FILE_OPEN_FOR_WRITE);
+    status = false;
+  }
+  
+  ConfigureDataFile(file, fileName);
+  return status;
+}
+
+/** Opens a previously created data file for write
+ *  @param *file SD file object
+ *  @param *filePath Path of the file on the SD card
+ *  @return Status of the file open
+ */
+bool OpenDataFile(SdFile *file, char *filePath)
+{
+  bool status = true;
+  if (!file->open(filePath, O_RDWR | O_CREAT | O_AT_END)) 
+  {
+    HandleError(eERR_SD_FAILED_FILE_OPEN_FOR_WRITE);
+    status = false;
+  }
+  return status;
 }
 
 /** Reads all contents of a file

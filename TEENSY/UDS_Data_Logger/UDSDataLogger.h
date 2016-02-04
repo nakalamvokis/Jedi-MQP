@@ -51,6 +51,7 @@ typedef struct {
 } model_t;
 
 /* FUNCTION PROTOTYPES */
+void SetFileNameAndPath(char *filePath, char *fileName, char *directory, const char *fileTitle, uint32_t fileNumber, size_t nameSize, size_t pathSize);
 void ChangeState(ReadType_e newReadType, NetworkState_e newNetworkState);
 
 #endif // UDSDATALOGGER_H

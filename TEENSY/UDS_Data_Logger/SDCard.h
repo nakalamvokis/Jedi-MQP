@@ -20,8 +20,9 @@
 bool SdInit(SdFat *sd, uint8_t chipSelect);
 void dateTime(uint16_t *date, uint16_t *time);
 bool MakeDirectory(char *dirName, SdFat *sd);
-bool ConfigureDataFile(char *filePath, char* fileName, SdFile *file);
-void OpenNewDataFile(SdFile *file, char *directory, const char *fileName, uint32_t fileNumber, size_t nameSize, size_t pathSize);
+void ConfigureDataFile(SdFile *file, char* fileName);
+bool OpenNewDataFile(SdFile *file, char *filePath, char *fileName);
+bool OpenDataFile(SdFile *file, char *filePath);
 bool ReadFile(char *fileName, SdFile *file);
 bool DeleteAllFiles(SdFat *sd);
 void FileWriteMessage(can_message_t *message, SdFile *file);

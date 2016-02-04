@@ -30,12 +30,11 @@ const char g_LbFileName[FILE_NAME_SIZE] = "After_UDS_Attack_";
 circular_buffer_t g_CB;                 // Circular buffer
 linear_buffer_t g_LB;                   // Linear buffer
 SdFat g_SD;                             // SD Card object
-SdFile g_CbFile;                        // Circular buffer file object
-SdFile g_LbFile;                        // Linear buffer file object
+SdFile g_CurrentFile;                   // File object of file traffic is currently being written to
 model_t g_Model;                        // System model
 char g_Timestamp[TIMESTAMP_SIZE];       // Timestamp for each file saved to SD card, this marks the start time of the program
-char g_currentFilePath[FILE_PATH_SIZE]; // Path of file traffic will be written to
-char g_currentFileName[FILE_NAME_SIZE]; // Name of file traffic will be written to
+char g_currentFilePath[FILE_PATH_SIZE]; // Path of file traffic is currently being written to
+char g_currentFileName[FILE_NAME_SIZE]; // Name of file traffic is currently being written to
 
 /** Sets the file name and path for a new data file
  *  This function is used to set these parameters before opening a new file
@@ -72,8 +71,8 @@ void ChangeState(ReadType_e newReadType, NetworkState_e newNetworkState)
       g_Model.numUDSMessages = 1;
       g_Model.corruptMsgCount = 1;
       SetFileNameAndPath(g_currentFilePath, g_currentFileName, g_Timestamp, g_LbFileName, g_Model.fileNumber, FILE_NAME_SIZE, FILE_PATH_SIZE);
-      OpenNewDataFile(&g_LbFile, g_currentFilePath, g_currentFileName);
-      g_LbFile.close();
+      OpenNewDataFile(&g_CurrentFile, g_currentFilePath, g_currentFileName);
+      g_CurrentFile.close();
       break;
     }
     case eREAD_CIRCULAR_BUFFER:
@@ -139,9 +138,9 @@ void loop(void)
           if (newMessage.id == UDS_ID) // UDS message detected, an attack occured
           {
             SetFileNameAndPath(g_currentFilePath, g_currentFileName, g_Timestamp, g_CbFileName, g_Model.fileNumber, FILE_NAME_SIZE, FILE_PATH_SIZE);
-            OpenNewDataFile(&g_CbFile, g_currentFilePath, g_currentFileName);
-            CircularBufferDumpToFile(&g_CB, &g_CbFile);
-            g_CbFile.close();
+            OpenNewDataFile(&g_CurrentFile, g_currentFilePath, g_currentFileName);
+            CircularBufferDumpToFile(&g_CB, &g_CurrentFile);
+            g_CurrentFile.close();
 
             #ifdef DIAG
               Serial.print("  Attack found: ");
@@ -172,9 +171,9 @@ void loop(void)
           
           if (g_LB.isFull)
           {
-            OpenDataFile(&g_LbFile, g_currentFilePath);
-            LinearBufferDumpToFile(&g_LB, &g_LbFile);
-            g_LbFile.close();
+            OpenDataFile(&g_CurrentFile, g_currentFilePath);
+            LinearBufferDumpToFile(&g_LB, &g_CurrentFile);
+            g_CurrentFile.close();
           }
 
           if (newMessage.id == UDS_ID) // UDS message detected, an attack occured
@@ -190,12 +189,12 @@ void loop(void)
           }
           else if (g_Model.corruptMsgCount >= MIN_CORRUPT_TRAFFIC_READINGS)
           {
-            OpenDataFile(&g_LbFile, g_currentFilePath);
-            LinearBufferDumpToFile(&g_LB, &g_LbFile);
+            OpenDataFile(&g_CurrentFile, g_currentFilePath);
+            LinearBufferDumpToFile(&g_LB, &g_CurrentFile);
             char UDSMsgCountString[50];
-            sprintf(UDSMsgCountString, "UDS Messages Recorded: %lu", g_Model.numUDSMessages);
-            g_LbFile.println(UDSMsgCountString);
-            g_LbFile.close();
+            sprintf(UDSMsgCountString, "\nUDS Messages Recorded: %lu", g_Model.numUDSMessages);
+            g_CurrentFile.println(UDSMsgCountString);
+            g_CurrentFile.close();
             
             ChangeState(eREAD_CIRCULAR_BUFFER, eSTATE_CORRUPT_TRAFFIC);
           }

@@ -107,8 +107,8 @@ void can_fifo_callback(uint8_t x)
   if(FLEXCAN_fifo_avalible())
   {
     FLEXCAN_frame_t newFrame;
-    FLEXCAN_fifo_read(&newFrame);
     can_message_t newMessage;
+    FLEXCAN_fifo_read(&newFrame);
     TransposeCanMessage(&newMessage, &newFrame);
     
     if(newMessage.id == UDS_ID)
@@ -128,6 +128,7 @@ void can_fifo_callback(uint8_t x)
         if (newMessage.id == UDS_ID) // UDS message detected, an attack occured
         {
           CB_write = true;
+          LinearBufferPush(&g_LB, &newMessage);
           ChangeState(eREAD_LINEAR_BUFFER, eSTATE_CORRUPT_TRAFFIC);
      
           #ifdef DIAG
@@ -136,8 +137,6 @@ void can_fifo_callback(uint8_t x)
               SerialPrintCanMessage(&newMessage);
               delay(1000);
            #endif
-  
-          LinearBufferPush(&g_LB, &newMessage);
         }
         else
         {
@@ -218,6 +217,7 @@ void setup(void)
 void loop(void)
 {
   CheckStatus(&g_SD);
+  
   if (CB_write == true)
   {
     SetFileNameAndPath(g_currentFilePath, g_currentFileName, g_Timestamp, g_CbFileName, g_Model.fileNumber, FILE_NAME_SIZE, FILE_PATH_SIZE);
@@ -234,15 +234,15 @@ void loop(void)
     g_CurrentFile.close();
   }
         
-        else if (LB_write)
-        {
-          OpenDataFile(&g_CurrentFile, g_currentFilePath);
-          LinearBufferDumpToFile(&g_LB, &g_CurrentFile);
-          char UDSMsgCountString[50];
-          sprintf(UDSMsgCountString, "\nUDS Messages Recorded: %lu", g_Model.numUDSMessages);
-          g_CurrentFile.println(UDSMsgCountString);
-          g_CurrentFile.close();
-          LB_write = false;
-        }
+  else if (LB_write)
+  {
+    OpenDataFile(&g_CurrentFile, g_currentFilePath);
+    LinearBufferDumpToFile(&g_LB, &g_CurrentFile);
+    char UDSMsgCountString[50];
+    sprintf(UDSMsgCountString, "\nUDS Messages Recorded: %lu", g_Model.numUDSMessages);
+    g_CurrentFile.println(UDSMsgCountString);
+    g_CurrentFile.close();
+    LB_write = false;
+  }
 }
 

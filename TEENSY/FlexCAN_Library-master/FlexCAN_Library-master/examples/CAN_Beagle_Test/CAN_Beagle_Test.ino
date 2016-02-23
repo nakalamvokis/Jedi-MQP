@@ -8,7 +8,7 @@
 /* SHOULDN"T BE HERE BUT I NEED IT FOR THE ISR */
 
 //#include <kinetis_flexcan.h>
-#include <Cmd.h>
+//#include <Cmd.h>
 #include <WProgram.h>
 
 /* CMDArduino Function Prototypes */
@@ -64,14 +64,9 @@ void can_fifo_callback(uint8_t x){
    if(FLEXCAN_fifo_avalible())
    {
       FLEXCAN_fifo_read(&frame);
-      Serial.print("Incoming Frame: ");
-      Serial.println(frame.id, HEX);
-   }
-   else
-   {
-   /* delay(1000);
-    Serial.println("no message");
-    delay(1000);*/
+      delay(1000);
+      Serial.println("yes");
+      delay(1000);
    }
    return;
 
@@ -87,17 +82,17 @@ void flexcan_cb_030(uint8_t mb){
 void setup(){
    
    Serial.begin(115200);
-   cmdInit(&Serial);
+//   cmdInit(&Serial);
    
    //int ret_val;
    FLEXCAN_config_t can_config;
 
 // IF you're using a 16mhz clock 
    can_config.presdiv   = 1;  /*!< Prescale division factor. */
-   can_config.propseg   = 2;  /*!< Prop Seg length. */
+   can_config.propseg   = 6;  /*!< Prop Seg length. */
    can_config.rjw       = 1;  /*!< Sychronization Jump Width*/
    can_config.pseg_1    = 7;  /*!< Phase 1 length */
-   can_config.pseg_2    = 3;  /*!< Phase 2 length */
+   can_config.pseg_2    = 2;  /*!< Phase 2 length */
 
    FLEXCAN_init(can_config);
    FLEXCAN_fifo_reg_callback(can_fifo_callback);
@@ -112,10 +107,10 @@ void setup(){
    FLEXCAN_mb_write(FLEXCAN_RX_BASE_MB + 1, FLEXCAN_MB_CODE_RX_EMPTY, cb_frame_a);
    FLEXCAN_mb_reg_callback(FLEXCAN_RX_BASE_MB + 1, flexcan_cb_030);
 
-   cmdAdd("status", FLEXCAN_cmd_status);
+/*   cmdAdd("status", FLEXCAN_cmd_status);
    cmdAdd("reset", FLEXCAN_cmd_reset);
    cmdAdd("send", FLEXCAN_send);
-   cmdAdd("echo", echo);
+   cmdAdd("echo", echo);*/
    
    pinMode(LED_PIN, OUTPUT);
    digitalWrite(LED_PIN, 0);
@@ -126,15 +121,7 @@ void setup(){
   */
 void loop(void)
 {
-   FLEXCAN_frame_t frame;
-    if(FLEXCAN_fifo_avalible())
-   {
-      FLEXCAN_fifo_read(&frame);
-      delay(1000);
-      Serial.print("Incoming Frame: ");
-      Serial.println(frame.id, HEX);
-      delay(1000);
-   }
+   can_fifo_callback(1);
 }
 
 

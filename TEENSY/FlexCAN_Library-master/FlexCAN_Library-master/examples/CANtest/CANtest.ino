@@ -8,10 +8,10 @@
 // Serial is used to print the ongoing status.
 //
 
-#include <Metro.h>
+//#include <Metro.h>
 #include <FlexCAN.h>
 
-Metro sysTimer = Metro(1);// milliseconds
+//Metro sysTimer = Metro(1);// milliseconds
 
 int led = 13;
 FlexCAN CANbus(500000);
@@ -44,9 +44,9 @@ void setup(void)
   digitalWrite(led, 1);
 
   delay(1000);
-  Serial.println(F("Hello Teensy 3.1 CAN Test."));
+  Serial.println("Hello Teensy 3.1 CAN Test.");
 
-  sysTimer.reset();
+//  sysTimer.reset();
 }
 
 
@@ -54,14 +54,14 @@ void setup(void)
 void loop(void)
 {
   // service software timers based on Metro tick
-  if ( sysTimer.check() ) {
+  /*if ( sysTimer.check() ) {
     if ( txTimer ) {
       --txTimer;
     }
     if ( rxTimer ) {
       --rxTimer;
     }
-  }
+  }*/
 
   // if not time-delayed, read CAN messages and print 1st byte
   if ( !rxTimer ) {

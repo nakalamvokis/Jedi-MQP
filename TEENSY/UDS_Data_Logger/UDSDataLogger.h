@@ -18,7 +18,7 @@
 #include "TimeModule.h"
 
 /* DEFINES */
-#define UDS_ID                        0x7E8     // Arbitration ID of all UDS messages sent to the vehicle
+#define UDS_ID                        0x7E9     // Arbitration ID of all UDS messages sent to the vehicle
 #define TEST_PACKET_TRANSFER_DELAY    1         // Packet simulation send delay time
 #define SD_CHIP_SELECT                10        // Chip select pin for SD card
 #define TIMESTAMP_SIZE                30        // Size of timestamp string

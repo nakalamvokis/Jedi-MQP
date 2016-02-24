@@ -16,17 +16,11 @@
 #include "UDSDataLogger.h"
 
 /* DEFINES */
-/*
 #define CIRCULAR_BUFFER_CAPACITY      1800      // Maximum capacity of the circular buffer, equates to ~1.2 seconds of CAN data
 #define LINEAR_BUFFER_CAPACITY        256       // Maximum capacity of the linear buffer
 #define MIN_CORRUPT_TRAFFIC_READINGS  90000     // Amount of corrupt CAN messages that will be recorded after each UDS message
-*/
 
-#define CIRCULAR_BUFFER_CAPACITY      10      // Maximum capacity of the circular buffer, equates to ~1.2 seconds of CAN data
-#define LINEAR_BUFFER_CAPACITY        10       // Maximum capacity of the linear buffer
-#define MIN_CORRUPT_TRAFFIC_READINGS  1000     // Amount of corrupt CAN messages that will be recorded after each UDS message
-
-//#define DIAG 1
+#define DIAG 1
 
 /* CONSTANTS */
 const char g_CbFileName[FILE_NAME_SIZE] = "Before_UDS_Attack_";
@@ -46,6 +40,9 @@ char g_currentFileName[FILE_NAME_SIZE]; // Name of file traffic is currently bei
 
 bool CB_write = false;
 bool LB_write = false;
+
+// @TODO: NOTE MAY HAVE TO HAVE TWO FILES WRITING TO AT THE SAME TIME! PLEASE CHECK ON THIS //
+
 
 /** Sets the file name and path for a new data file
  *  This function is used to set these parameters before opening a new file
@@ -110,15 +107,17 @@ void can_fifo_callback(uint8_t x)
     can_message_t newMessage;
     FLEXCAN_fifo_read(&newFrame);
     TransposeCanMessage(&newMessage, &newFrame);
-    
+
+/*
+    Serial.println(newFrame.id, HEX);
     if(newMessage.id == UDS_ID)
     {
       #ifdef DIAG
-      delay(1000);
       Serial.println("Found UDS");
-      delay(1000);
       #endif
     }
+    */
+    
     switch (g_Model.readType)
     { 
       case eREAD_CIRCULAR_BUFFER:
@@ -153,15 +152,13 @@ void can_fifo_callback(uint8_t x)
         
         if (newMessage.id == UDS_ID) // UDS message detected, an attack occured
         {
-          /*  #ifdef DIAG
-              Serial.print("  Another UDS Message found: ");
-              Serial.print(newMessage.id, HEX);
-              Serial.println(" (Extending read time)");
-            #endif
-            */
-            
           g_Model.corruptMsgCount = 0;
           g_Model.numUDSMessages++;
+          #ifdef DIAG
+            Serial.print("  Another UDS Message found: ");
+            Serial.print(newMessage.id, HEX);
+            Serial.println(" (Extending read time)");
+          #endif
         }
         else if (g_Model.corruptMsgCount >= MIN_CORRUPT_TRAFFIC_READINGS)
         {

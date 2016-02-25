@@ -10,15 +10,10 @@
 #include <SPI.h>
 #include <Wire.h>
 #include <can.h>
-#include <FlexCAN.h>
-#include <kinetis_flexcan.h>
 #include <SdFat.h>
 #include <Time.h>
 #include <DS1307RTC.h>
 #include "UDSDataLogger.h"
-
-FlexCAN CANbus(500000);
-static CAN_message_t rxMsg;
 
 /* DEFINES */
 #define UDS_ID                        0x7E8    // Arbitration ID of all UDS messages sent to the vehicle
@@ -27,7 +22,7 @@ static CAN_message_t rxMsg;
 #define MIN_CORRUPT_TRAFFIC_READINGS  90000     // Amount of corrupt CAN messages that will be recorded after each UDS message
 
 //#define DIAG 1
-//#define PRINT 1
+#define PRINT 1
 
 /* CONSTANTS */
 const char g_CbFileName[FILE_NAME_SIZE] = "Before_UDS_Attack_";
@@ -99,52 +94,23 @@ void ChangeState(ReadType_e newReadType, NetworkState_e newNetworkState)
   }
 }
 
-
-void setup(void)
-{
-  Serial.begin(115200);
-  
-  /* Model Configuration */
-  g_Model.readType = eREAD_CIRCULAR_BUFFER;  
-  g_Model.networkState = eSTATE_NORMAL_TRAFFIC;
-  g_Model.corruptMsgCount = 0;
-  g_Model.fileNumber = 1;
-  g_Model.numUDSMessages = 0;
-  g_Model.totalMsgCount = 0;
-
-  /* Buffer Configuration */
-  CircularBufferInit(&g_CB, CIRCULAR_BUFFER_CAPACITY, sizeof(can_message_t));
-  LinearBufferInit(&g_LB, LINEAR_BUFFER_CAPACITY, sizeof(can_message_t));
-
-  /* Timing Configuration */
-  RTCInit();
-
-  /* File Writing Configuration */
-  SetTimestamp(g_Timestamp, TIMESTAMP_SIZE);
-  SdInit(&g_SD, SD_CHIP_SELECT);
-
-  /* CAN Network Configuration */
-  CANbus.begin();
-  Serial.begin(115200);
-}
-
-void loop(void)
+/** Callback function for the CAN hardware fifo queue
+ *  This callback is used to avoid the use of polling and therefore, increase CAN read speeds
+ */
+void can_fifo_callback(uint8_t x)
 {
   CheckStatus(&g_SD);
-  if(CANbus.read(rxMsg))
+  if(FLEXCAN_fifo_avalible())
   {
+    FLEXCAN_frame_t newFrame;
     can_message_t newMessage;
-    uint8_t count = 0;
-    newMessage.id = rxMsg.id;
-    newMessage.timestamp = millis();
-    for (count = 0; count < rxMsg.len; count++)
-    {
-      newMessage.data[count] = rxMsg.buf[count];
-    }
-    newMessage.len = rxMsg.len;
+    FLEXCAN_fifo_read(&newFrame);
+    TransposeCanMessage(&newMessage, &newFrame);
 
     #ifdef PRINT
-      SerialPrintCanMessage(&newMessage);
+      delay(100);
+      Serial.println(newMessage.id, HEX);
+      delay(1000);
       if (newMessage.id == UDS_ID)
       {
         Serial.println("Found UDS");
@@ -234,5 +200,41 @@ void loop(void)
     }
   }
    return;
+}
+
+void setup(void)
+{
+  Serial.begin(115200);
+  
+  /* Model Configuration */
+  g_Model.readType = eREAD_CIRCULAR_BUFFER;  
+  g_Model.networkState = eSTATE_NORMAL_TRAFFIC;
+  g_Model.corruptMsgCount = 0;
+  g_Model.fileNumber = 1;
+  g_Model.numUDSMessages = 0;
+  g_Model.totalMsgCount = 0;
+
+  /* Buffer Configuration */
+  CircularBufferInit(&g_CB, CIRCULAR_BUFFER_CAPACITY, sizeof(can_message_t));
+  LinearBufferInit(&g_LB, LINEAR_BUFFER_CAPACITY, sizeof(can_message_t));
+
+  /* Timing Configuration */
+  RTCInit();
+
+  /* File Writing Configuration */
+  SetTimestamp(g_Timestamp, TIMESTAMP_SIZE);
+  SdInit(&g_SD, SD_CHIP_SELECT);
+
+  /* CAN Network Configuration */
+  FLEXCAN_config_t canConfig;
+  CanConfigInit(&canConfig);
+  FLEXCAN_init(canConfig);
+  FLEXCAN_fifo_reg_callback(can_fifo_callback);
+}
+
+void loop(void)
+{
+  CheckStatus(&g_SD);
+  delay(10);
 }
 

@@ -153,15 +153,14 @@ bool DeleteAllFiles(SdFat *sd)
 void FileWriteMessage(can_message_t *message, SdFile *file)
 {
   uint8_t currentData = 0;
-  char dataOut[5];
   file->print(message->timestamp, DEC);
-  file->print("\t\t\t");
-  snprintf(dataOut, sizeof(dataOut), "%03lX\t", message->id);
-  file->print(dataOut);
+  file->print("\t\t");
+  file->print(message->id, HEX);
+  file->print("\t");
   for (currentData = 0; currentData < message->len; currentData++)
   {
-    snprintf(dataOut, sizeof(dataOut), "%02X ", message->data[currentData]);
-    file->print(dataOut);
+    file->print(message->data[currentData], HEX);
+    file->print(" ");
   }
   file->println();
 }

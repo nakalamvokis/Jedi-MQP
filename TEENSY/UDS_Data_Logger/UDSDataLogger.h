@@ -18,7 +18,6 @@
 #include "TimeModule.h"
 
 /* DEFINES */
-#define UDS_ID                        0x7E9     // Arbitration ID of all UDS messages sent to the vehicle
 #define TEST_PACKET_TRANSFER_DELAY    1         // Packet simulation send delay time
 #define SD_CHIP_SELECT                10        // Chip select pin for SD card
 #define TIMESTAMP_SIZE                30        // Size of timestamp string
@@ -53,6 +52,7 @@ typedef struct {
 /* FUNCTION PROTOTYPES */
 void SetFileNameAndPath(char *filePath, char *fileName, char *directory, const char *fileTitle, uint32_t fileNumber, size_t nameSize, size_t pathSize);
 void ChangeState(ReadType_e newReadType, NetworkState_e newNetworkState);
+void can_fifo_callback(uint8_t x);
 
 #endif // UDSDATALOGGER_H
 

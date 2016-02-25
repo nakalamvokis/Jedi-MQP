@@ -34,16 +34,9 @@ linear_buffer_t g_LB;                     // Linear buffer
 SdFat g_SD;                               // SD Card object
 model_t g_Model;                          // System model
 char g_Timestamp[TIMESTAMP_SIZE];         // Timestamp for each file saved to SD card, this marks the start time of the program
-SdFile g_CurrentCbFile;                   // File object of file traffic is currently being written to
-char g_currentCbFilePath[FILE_PATH_SIZE]; // Path of file traffic is currently being written to
-char g_currentCbFileName[FILE_NAME_SIZE]; // Name of file traffic is currently being written to
-SdFile g_CurrentLbFile;                   // File object of file traffic is currently being written to
-char g_currentLbFilePath[FILE_PATH_SIZE]; // Path of file traffic is currently being written to
-char g_currentLbFileName[FILE_NAME_SIZE]; // Name of file traffic is currently being written to
-
-
-bool Cb_write = false;
-bool Lb_write = false;
+SdFile g_CurrentFile;                   // File object of file traffic is currently being written to
+char g_currentFilePath[FILE_PATH_SIZE]; // Path of file traffic is currently being written to
+char g_currentFileName[FILE_NAME_SIZE]; // Name of file traffic is currently being written to
 
 
 /** Sets the file name and path for a new data file
@@ -80,9 +73,9 @@ void ChangeState(ReadType_e newReadType, NetworkState_e newNetworkState)
       
       g_Model.numUDSMessages = 1;
       g_Model.corruptMsgCount = 1;
-      SetFileNameAndPath(g_currentLbFilePath, g_currentLbFileName, g_Timestamp, g_LbFileName, g_Model.fileNumber, FILE_NAME_SIZE, FILE_PATH_SIZE);
-      OpenNewDataFile(&g_CurrentLbFile, g_currentLbFilePath, g_currentLbFileName);
-      g_CurrentLbFile.close();
+      SetFileNameAndPath(g_currentFilePath, g_currentFileName, g_Timestamp, g_LbFileName, g_Model.fileNumber, FILE_NAME_SIZE, FILE_PATH_SIZE);
+      OpenNewDataFile(&g_CurrentFile, g_currentFilePath, g_currentFileName);
+      g_CurrentFile.close();
       break;
     }
     case eREAD_CIRCULAR_BUFFER:
@@ -101,8 +94,12 @@ void ChangeState(ReadType_e newReadType, NetworkState_e newNetworkState)
   }
 }
 
+/** Callback function for the CAN hardware fifo queue
+ *  This callback is used to avoid the use of polling and therefore, increase CAN read speeds
+ */
 void can_fifo_callback(uint8_t x)
 {
+  CheckStatus(&g_SD);
   if(FLEXCAN_fifo_avalible())
   {
     FLEXCAN_frame_t newFrame;
@@ -114,34 +111,29 @@ void can_fifo_callback(uint8_t x)
       Serial.println(newFrame.id, HEX);
     #endif
     
-    if(newMessage.id == UDS_ID)
-    {
-      #ifdef DIAG
-      delay(1000);
-      Serial.println("Found UDS");
-      delay(1000);
-      #endif
-    }
-    
-    
     switch (g_Model.readType)
     { 
       case eREAD_CIRCULAR_BUFFER:
       {
         if (newMessage.id == UDS_ID) // UDS message detected, an attack was launched
         {
+          #ifdef DIAG
+            Serial.println("Found attack - dumping circular buffer to SD card");
+            SerialPrintCanMessage(&newMessage);
+          #endif
+          
           if (!g_SD.exists(g_Timestamp)) // create a new directory after the first attack starts
           {
             MakeDirectory(g_Timestamp, &g_SD);
           }
-          Cb_write = true;
+
+          SetFileNameAndPath(g_currentFilePath, g_currentFileName, g_Timestamp, g_CbFileName, g_Model.fileNumber, FILE_NAME_SIZE, FILE_PATH_SIZE);
+          OpenNewDataFile(&g_CurrentFile, g_currentFilePath, g_currentFileName);
+          CircularBufferDumpToFile(&g_CB, &g_CurrentFile);
+          g_CurrentFile.close();
+          
           LinearBufferPush(&g_LB, &newMessage);
           ChangeState(eREAD_LINEAR_BUFFER, eSTATE_CORRUPT_TRAFFIC);
-     
-          #ifdef DIAG
-              Serial.print("  Attack found: ");
-              SerialPrintCanMessage(&newMessage);
-           #endif
         }
         else
         {
@@ -156,6 +148,17 @@ void can_fifo_callback(uint8_t x)
         LinearBufferPush(&g_LB, &newMessage);
         g_Model.corruptMsgCount++;
         g_Model.totalMsgCount++;
+
+        if (g_LB.isFull)
+        {
+          #ifdef DIAG
+            Serial.println("Linear buffer full - dumping linear buffer to SD card");
+          #endif
+    
+          OpenDataFile(&g_CurrentFile, g_currentFilePath);
+          LinearBufferDumpToFile(&g_LB, &g_CurrentFile);
+          g_CurrentFile.close();
+        }
         
         if (newMessage.id == UDS_ID) // UDS message detected, an attack occured
         {
@@ -170,7 +173,16 @@ void can_fifo_callback(uint8_t x)
         }
         else if (g_Model.corruptMsgCount >= MIN_CORRUPT_TRAFFIC_READINGS)
         {
-          Lb_write = true;
+          #ifdef DIAG
+            Serial.println("UDS Message end - dumping linear buffer to SD card");
+          #endif
+    
+          OpenDataFile(&g_CurrentFile, g_currentFilePath);
+          LinearBufferDumpToFile(&g_LB, &g_CurrentFile);
+          char UDSMsgCountString[50];
+          sprintf(UDSMsgCountString, "\nUDS Messages Recorded: %lu", g_Model.numUDSMessages);
+          g_CurrentFile.println(UDSMsgCountString);
+          g_CurrentFile.close();
           ChangeState(eREAD_CIRCULAR_BUFFER, eSTATE_CORRUPT_TRAFFIC);
         }
         break;
@@ -217,44 +229,6 @@ void setup(void)
 void loop(void)
 {
   CheckStatus(&g_SD);
-  
-  if (Cb_write == true)
-  {
-    #ifdef DIAG
-      Serial.println("Found attack - dumping circular buffer to SD card");
-    #endif
-    
-    SetFileNameAndPath(g_currentCbFilePath, g_currentCbFileName, g_Timestamp, g_CbFileName, g_Model.fileNumber, FILE_NAME_SIZE, FILE_PATH_SIZE);
-    OpenNewDataFile(&g_CurrentCbFile, g_currentCbFilePath, g_currentCbFileName);
-    CircularBufferDumpToFile(&g_CB, &g_CurrentCbFile);
-    g_CurrentCbFile.close();
-    Cb_write = false;
-  }
-     
-  else if (g_LB.isFull)
-  {
-    #ifdef DIAG
-      Serial.println("Linear buffer full - dumping linear buffer to SD card");
-    #endif
-    
-    OpenDataFile(&g_CurrentLbFile, g_currentLbFilePath);
-    LinearBufferDumpToFile(&g_LB, &g_CurrentLbFile);
-    g_CurrentLbFile.close();
-  }
-        
-  else if (Lb_write)
-  {
-    #ifdef DIAG
-      Serial.println("UDS Message end - dumping linear buffer to SD card");
-    #endif
-    
-    OpenDataFile(&g_CurrentLbFile, g_currentLbFilePath);
-    LinearBufferDumpToFile(&g_LB, &g_CurrentLbFile);
-    char UDSMsgCountString[50];
-    sprintf(UDSMsgCountString, "\nUDS Messages Recorded: %lu", g_Model.numUDSMessages);
-    g_CurrentLbFile.println(UDSMsgCountString);
-    g_CurrentLbFile.close();
-    Lb_write = false;
-  }
+  delay(10);
 }
 

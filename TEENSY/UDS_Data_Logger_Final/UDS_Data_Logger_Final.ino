@@ -23,7 +23,7 @@ static CAN_message_t rxMsg;
 /* DEFINES */
 #define UDS_ID                        0x7E8    // Arbitration ID of all UDS messages sent to the vehicle
 #define CIRCULAR_BUFFER_CAPACITY      1800      // Maximum capacity of the circular buffer, equates to ~1.2 seconds of CAN data
-#define LINEAR_BUFFER_CAPACITY        256       // Maximum capacity of the linear buffer
+#define LINEAR_BUFFER_CAPACITY        1024       // Maximum capacity of the linear buffer
 #define MIN_CORRUPT_TRAFFIC_READINGS  90000     // Amount of corrupt CAN messages that will be recorded after each UDS message
 
 //#define DIAG 1

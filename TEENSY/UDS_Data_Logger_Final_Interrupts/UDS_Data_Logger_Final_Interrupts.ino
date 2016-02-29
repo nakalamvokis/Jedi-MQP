@@ -1,3 +1,7 @@
+#include <can.h>
+#include <FlexCAN.h>
+#include <kinetis_flexcan.h>
+
 /*
   * @file UDS_Data_Logger.ino
   * @author Nicholas Kalamvokis
@@ -9,16 +13,17 @@
 /* INCLUDES */
 #include <SPI.h>
 #include <Wire.h>
-#include <can.h>
+//#include <can.h>
 #include <SdFat.h>
 #include <Time.h>
 #include <DS1307RTC.h>
 #include "UDSDataLogger.h"
 
+
 /* DEFINES */
 #define UDS_ID                        0x7E8    // Arbitration ID of all UDS messages sent to the vehicle
 #define CIRCULAR_BUFFER_CAPACITY      1800      // Maximum capacity of the circular buffer, equates to ~1.2 seconds of CAN data
-#define LINEAR_BUFFER_CAPACITY        256       // Maximum capacity of the linear buffer
+#define LINEAR_BUFFER_CAPACITY        1024       // Maximum capacity of the linear buffer
 #define MIN_CORRUPT_TRAFFIC_READINGS  90000     // Amount of corrupt CAN messages that will be recorded after each UDS message
 
 //#define DIAG 1
@@ -99,7 +104,6 @@ void ChangeState(ReadType_e newReadType, NetworkState_e newNetworkState)
  */
 void can_fifo_callback(uint8_t x)
 {
-  CheckStatus(&g_SD);
   if(FLEXCAN_fifo_avalible())
   {
     FLEXCAN_frame_t newFrame;
@@ -234,6 +238,7 @@ void setup(void)
 
 void loop(void)
 {
+  Serial.println("Coo");
   CheckStatus(&g_SD);
   delay(10);
 }

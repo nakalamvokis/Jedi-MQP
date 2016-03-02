@@ -145,10 +145,6 @@ void loop(void)
 
     #ifdef PRINT
       SerialPrintCanMessage(&newMessage);
-      if (newMessage.id == UDS_ID)
-      {
-        Serial.println("Found UDS");
-      }
     #endif
     
     switch (g_Model.readType)

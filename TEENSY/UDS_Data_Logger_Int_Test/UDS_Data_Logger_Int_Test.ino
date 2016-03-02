@@ -149,9 +149,13 @@ void can_fifo_callback(uint8_t x)
 
       case eREAD_LINEAR_BUFFER:
       {
-        LinearBufferPush(&g_LB, &newMessage);
+       // LinearBufferPush(&g_LB, &newMessage);
         g_Model.corruptMsgCount++;
         g_Model.totalMsgCount++;
+
+        OpenDataFile(&g_CurrentFile, g_currentFilePath);
+        FileWriteMessage(&newMessage, &g_CurrentFile);
+        g_CurrentFile.close();
 
         if (g_LB.isFull)
         {
@@ -182,7 +186,7 @@ void can_fifo_callback(uint8_t x)
           #endif
     
           OpenDataFile(&g_CurrentFile, g_currentFilePath);
-          LinearBufferDumpToFile(&g_LB, &g_CurrentFile);
+         // LinearBufferDumpToFile(&g_LB, &g_CurrentFile);
           char UDSMsgCountString[50];
           sprintf(UDSMsgCountString, "\nUDS Messages Recorded: %lu", g_Model.numUDSMessages);
           g_CurrentFile.println(UDSMsgCountString);
